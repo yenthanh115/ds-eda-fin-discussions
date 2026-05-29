@@ -30,7 +30,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Report absence with search criteria if no datasets found
     - _Requirements: 1.1, 1.3, 1.5, 7.5_
 
-  - [ ] 2.2 Implement HuggingFace dataset scanner
+  - [x] 2.2 Implement HuggingFace dataset scanner
     - Implement `scan_huggingface(search_terms: list[str]) -> list[DatasetMetadata]` in `src/dataset_discovery.py`
     - Record same metadata fields as Kaggle scanner
     - Handle network errors gracefully
