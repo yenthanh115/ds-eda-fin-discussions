@@ -61,7 +61,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Assess whether API supports surge label construction
     - _Requirements: 2.1, 2.3, 2.4, 2.5_
 
-  - [ ] 3.2 Implement Reddit API assessment
+  - [x] 3.2 Implement Reddit API assessment
     - Implement `assess_reddit_api() -> APIAssessment` in `src/api_feasibility.py`
     - Evaluate rate limits, endpoints, cost tiers, available fields, historical access
     - Document estimated time and cost to collect 10,000 posts

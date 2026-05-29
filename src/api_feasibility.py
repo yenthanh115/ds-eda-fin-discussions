@@ -191,3 +191,110 @@ def assess_twitter_api() -> APIAssessment:
         supports_surge_label=supports_surge,
         paid_fields=paid_fields,
     )
+
+
+
+def assess_reddit_api() -> APIAssessment:
+    """Evaluate Reddit API feasibility for stock discussion data collection.
+
+    Assesses rate limits, endpoints, cost tiers, available fields,
+    historical access, and whether the API supports surge label construction.
+    Documents estimated time and cost to collect 10,000 posts.
+
+    Returns:
+        APIAssessment with Reddit API evaluation results.
+    """
+    logger.info("Assessing Reddit API feasibility...")
+
+    platform = "reddit"
+
+    # Reddit API specifications (via PRAW / official API, as of 2024)
+    rate_limits: dict[str, Any] = {
+        "oauth_tier": {
+            "requests_per_minute": 100,
+            "posts_per_request": 100,
+            "daily_limit": None,  # No hard daily cap for OAuth apps
+        },
+        "free_tier_note": (
+            "Reddit API is free for non-commercial use with OAuth. "
+            "Commercial use requires paid access."
+        ),
+    }
+
+    endpoints = [
+        "GET /r/{subreddit}/search",
+        "GET /r/{subreddit}/hot",
+        "GET /r/{subreddit}/new",
+        "GET /r/{subreddit}/top",
+        "GET /comments/{article}",
+        "GET /api/info",
+        "GET /search (site-wide)",
+    ]
+
+    cost_tiers: list[dict[str, Any]] = [
+        {
+            "tier": "Free (non-commercial)",
+            "cost_usd_monthly": 0,
+            "rate_limit": "100 requests/min",
+            "note": "Requires OAuth app registration",
+        },
+        {
+            "tier": "Commercial",
+            "cost_usd_monthly": "Contact Reddit",
+            "rate_limit": "Higher limits available",
+            "note": "Required for commercial data use since 2023 API changes",
+        },
+    ]
+
+    available_fields = [
+        "title", "selftext", "body", "created_utc", "score",
+        "ups", "downs", "num_comments", "upvote_ratio",
+        "author", "subreddit", "permalink", "url",
+        "link_flair_text", "over_18", "is_self",
+    ]
+
+    # Historical access: Reddit allows searching back ~6 months via API,
+    # Pushshift (third-party) provided full history but is now restricted
+    historical_access = True  # Limited but available via subreddit listings
+
+    # Estimate for 10,000 posts using free OAuth tier
+    # 100 requests/min, 100 posts/request
+    target_posts = 10_000
+    requests_per_minute = 100.0
+    posts_per_request = 100
+    cost_per_request = 0.0  # Free for non-commercial
+
+    estimated_time = _estimate_collection_time_hours(
+        target_posts, requests_per_minute, posts_per_request
+    )
+    estimated_cost = _estimate_collection_cost(
+        target_posts, cost_per_request, posts_per_request
+    )
+
+    supports_surge = _check_surge_label_support(available_fields)
+
+    paid_fields: list[dict[str, str]] = [
+        {
+            "field": "full historical archive",
+            "tier": "Commercial (contact Reddit)",
+            "description": "Complete historical post/comment access beyond API limits",
+        },
+        {
+            "field": "real-time streaming",
+            "tier": "Commercial (contact Reddit)",
+            "description": "Real-time firehose access to new posts/comments",
+        },
+    ]
+
+    return APIAssessment(
+        platform=platform,
+        rate_limits=rate_limits,
+        endpoints=endpoints,
+        cost_tiers=cost_tiers,
+        available_fields=available_fields,
+        historical_access=historical_access,
+        estimated_collection_time_hours=estimated_time,
+        estimated_cost_usd=estimated_cost,
+        supports_surge_label=supports_surge,
+        paid_fields=paid_fields,
+    )
