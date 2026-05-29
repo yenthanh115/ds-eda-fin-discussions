@@ -43,3 +43,40 @@ def analyze_structure(df: pd.DataFrame, ticker_col: str = "ticker") -> dict[str,
         "ticker_count": ticker_count,
         "columns": list(df.columns),
     }
+
+
+
+def compute_missing_values(df: pd.DataFrame) -> dict[str, Any]:
+    """Compute per-column missing value percentages and flag high-risk columns.
+
+    A column is flagged as high-risk if more than 30% of its values are missing.
+
+    Args:
+        df: The DataFrame to analyze.
+
+    Returns:
+        Dictionary with keys:
+        - missing_percentages: dict mapping column name -> missing percentage (0-100)
+        - high_risk_columns: list of column names with >30% missing
+    """
+    if len(df) == 0:
+        return {
+            "missing_percentages": {col: 0.0 for col in df.columns},
+            "high_risk_columns": [],
+        }
+
+    total_rows = len(df)
+    missing_percentages: dict[str, float] = {}
+    high_risk_columns: list[str] = []
+
+    for col in df.columns:
+        missing_count = df[col].isna().sum()
+        pct = (missing_count / total_rows) * 100.0
+        missing_percentages[col] = pct
+        if pct > 30.0:
+            high_risk_columns.append(col)
+
+    return {
+        "missing_percentages": missing_percentages,
+        "high_risk_columns": high_risk_columns,
+    }

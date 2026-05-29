@@ -88,7 +88,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Implement `analyze_structure(df) -> dict` documenting schema, column types, record count, unique ticker count
     - _Requirements: 3.1_
 
-  - [ ] 5.2 Implement missing value computation
+  - [x] 5.2 Implement missing value computation
     - Implement `compute_missing_values(df) -> dict[str, float]` computing per-column missing percentages
     - Flag columns with >30% missing as high-risk
     - _Requirements: 3.2_
