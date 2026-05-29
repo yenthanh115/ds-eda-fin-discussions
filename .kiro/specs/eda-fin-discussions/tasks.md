@@ -79,7 +79,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Use Hypothesis to generate sets of API fields, verify `supports_surge_label` is True iff fields contain engagement metric + sentiment text + timestamp
     - **Validates: Requirements 2.5**
 
-- [ ] 4. Checkpoint - Ensure discovery and API modules work
+- [x] 4. Checkpoint - Ensure discovery and API modules work
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. Implement Dataset Quality Analysis module
