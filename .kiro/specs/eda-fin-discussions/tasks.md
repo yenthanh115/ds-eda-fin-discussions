@@ -107,7 +107,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Use Hypothesis to generate sorted timestamp sequences, verify all gaps >7 days are identified and date range spans min to max
     - **Validates: Requirements 3.3**
 
-  - [ ] 5.6 Implement engagement distribution computation
+  - [x] 5.6 Implement engagement distribution computation
     - Implement `compute_engagement_distributions(df, metric_cols) -> dict` computing mean, median, 90th/95th/99th percentiles
     - _Requirements: 3.4_
 

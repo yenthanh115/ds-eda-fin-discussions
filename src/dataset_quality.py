@@ -153,3 +153,44 @@ def analyze_time_coverage(
         },
         "gap_count": len(temporal_gaps),
     }
+
+
+
+def compute_engagement_distributions(
+    df: pd.DataFrame, metric_cols: list[str]
+) -> dict[str, dict[str, float]]:
+    """Compute summary statistics for engagement metrics.
+
+    For each metric column, computes mean, median, and percentiles
+    (90th, 95th, 99th).
+
+    Args:
+        df: The DataFrame containing engagement data.
+        metric_cols: List of column names with numeric engagement metrics.
+
+    Returns:
+        Dictionary mapping metric name -> {mean, median, p90, p95, p99}.
+        Columns not found or non-numeric are skipped with a warning.
+    """
+    results: dict[str, dict[str, float]] = {}
+
+    for col in metric_cols:
+        if col not in df.columns:
+            logger.warning("Engagement column '%s' not found in DataFrame.", col)
+            continue
+
+        series = pd.to_numeric(df[col], errors="coerce").dropna()
+
+        if len(series) == 0:
+            logger.warning("No valid numeric data in column '%s'.", col)
+            continue
+
+        results[col] = {
+            "mean": float(series.mean()),
+            "median": float(series.median()),
+            "p90": float(series.quantile(0.90)),
+            "p95": float(series.quantile(0.95)),
+            "p99": float(series.quantile(0.99)),
+        }
+
+    return results
