@@ -391,3 +391,103 @@ def assess_sentiment_reliability(
         "methods_compared": ["vader", "textblob"],
         "total_compared": len(texts),
     }
+
+
+
+def compare_stock_vs_general(
+    stock_df: pd.DataFrame, general_df: pd.DataFrame, metric_cols: list[str] | None = None
+) -> dict[str, Any]:
+    """Compare engagement patterns between stock-specific and general discussions.
+
+    Computes summary statistics for engagement metrics in both DataFrames
+    and reports differences to validate that stock discussions exhibit
+    distinct engagement behavior.
+
+    Args:
+        stock_df: DataFrame containing stock-specific discussion data.
+        general_df: DataFrame containing general discussion data.
+        metric_cols: List of engagement metric column names to compare.
+            If None, auto-detects numeric columns present in both DataFrames.
+
+    Returns:
+        Dictionary with keys:
+        - metrics_compared: list of metric names compared
+        - stock_stats: dict of metric -> {mean, median, std}
+        - general_stats: dict of metric -> {mean, median, std}
+        - differences: dict of metric -> {mean_diff, median_diff, mean_ratio}
+        - distinct_behavior: bool indicating if stock engagement differs notably
+    """
+    import numpy as np
+
+    if metric_cols is None:
+        # Auto-detect numeric columns present in both DataFrames
+        stock_numeric = set(stock_df.select_dtypes(include="number").columns)
+        general_numeric = set(general_df.select_dtypes(include="number").columns)
+        metric_cols = sorted(stock_numeric & general_numeric)
+
+    if not metric_cols:
+        logger.warning("No common numeric columns found for comparison.")
+        return {
+            "metrics_compared": [],
+            "stock_stats": {},
+            "general_stats": {},
+            "differences": {},
+            "distinct_behavior": False,
+        }
+
+    stock_stats: dict[str, dict[str, float]] = {}
+    general_stats: dict[str, dict[str, float]] = {}
+    differences: dict[str, dict[str, float]] = {}
+
+    notable_differences = 0
+
+    for col in metric_cols:
+        if col not in stock_df.columns or col not in general_df.columns:
+            continue
+
+        stock_series = pd.to_numeric(stock_df[col], errors="coerce").dropna()
+        general_series = pd.to_numeric(general_df[col], errors="coerce").dropna()
+
+        if len(stock_series) == 0 or len(general_series) == 0:
+            continue
+
+        s_mean = float(stock_series.mean())
+        s_median = float(stock_series.median())
+        s_std = float(stock_series.std()) if len(stock_series) > 1 else 0.0
+
+        g_mean = float(general_series.mean())
+        g_median = float(general_series.median())
+        g_std = float(general_series.std()) if len(general_series) > 1 else 0.0
+
+        stock_stats[col] = {"mean": s_mean, "median": s_median, "std": s_std}
+        general_stats[col] = {"mean": g_mean, "median": g_median, "std": g_std}
+
+        mean_diff = s_mean - g_mean
+        median_diff = s_median - g_median
+        mean_ratio = s_mean / g_mean if g_mean != 0 else float("inf")
+
+        differences[col] = {
+            "mean_diff": mean_diff,
+            "median_diff": median_diff,
+            "mean_ratio": mean_ratio,
+        }
+
+        # Consider notable if ratio > 1.5 or < 0.67 (50% difference)
+        if mean_ratio > 1.5 or (mean_ratio < 0.67 and mean_ratio > 0):
+            notable_differences += 1
+
+    # Distinct behavior if at least half of metrics show notable differences
+    compared_count = len(differences)
+    distinct = (
+        notable_differences >= max(1, compared_count // 2)
+        if compared_count > 0
+        else False
+    )
+
+    return {
+        "metrics_compared": list(differences.keys()),
+        "stock_stats": stock_stats,
+        "general_stats": general_stats,
+        "differences": differences,
+        "distinct_behavior": distinct,
+    }

@@ -121,7 +121,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Implement `assess_sentiment_reliability(df, text_col) -> dict` comparing at least two sentiment methods for inter-method agreement
     - _Requirements: 3.5, 3.9_
 
-  - [ ] 5.9 Implement stock vs. general engagement comparison
+  - [x] 5.9 Implement stock vs. general engagement comparison
     - Implement `compare_stock_vs_general(stock_df, general_df) -> dict` comparing engagement patterns
     - _Requirements: 3.8_
 
