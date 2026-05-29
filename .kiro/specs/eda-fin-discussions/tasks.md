@@ -93,7 +93,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Flag columns with >30% missing as high-risk
     - _Requirements: 3.2_
 
-  - [ ]* 5.3 Write property test for missing value computation
+  - [x]* 5.3 Write property test for missing value computation
     - **Property 5: Missing value computation and high-risk flagging**
     - Use Hypothesis to generate DataFrames with known null patterns, verify percentages match actual null counts / total rows, and high-risk flag triggers iff >30%
     - **Validates: Requirements 3.2**
