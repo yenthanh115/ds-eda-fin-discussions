@@ -116,7 +116,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Use Hypothesis to generate non-empty numeric arrays, verify computed statistics match mathematically correct values
     - **Validates: Requirements 3.4**
 
-  - [ ] 5.8 Implement sentiment analysis
+  - [x] 5.8 Implement sentiment analysis
     - Implement `analyze_sentiment(df, text_col) -> dict` performing sentiment distribution analysis and computing bullish-to-bearish ratio
     - Implement `assess_sentiment_reliability(df, text_col) -> dict` comparing at least two sentiment methods for inter-method agreement
     - _Requirements: 3.5, 3.9_

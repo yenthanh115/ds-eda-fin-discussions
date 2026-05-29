@@ -194,3 +194,200 @@ def compute_engagement_distributions(
         }
 
     return results
+
+
+
+def analyze_sentiment(
+    df: pd.DataFrame, text_col: str
+) -> dict[str, Any]:
+    """Perform sentiment distribution analysis and compute bullish-to-bearish ratio.
+
+    Uses VADER sentiment analyzer to compute polarity scores for each text entry,
+    then generates distribution statistics and the bullish/bearish ratio.
+
+    Args:
+        df: The DataFrame containing text data.
+        text_col: Name of the column containing text content.
+
+    Returns:
+        Dictionary with keys:
+        - polarity_scores: dict with mean, median, std of compound scores
+        - bullish_count: number of positive sentiment posts (compound > 0.05)
+        - bearish_count: number of negative sentiment posts (compound < -0.05)
+        - neutral_count: number of neutral posts
+        - bullish_bearish_ratio: ratio of bullish to bearish (inf if bearish=0)
+        - total_analyzed: number of texts analyzed
+    """
+    if text_col not in df.columns:
+        logger.warning("Text column '%s' not found in DataFrame.", text_col)
+        return {
+            "polarity_scores": {"mean": 0.0, "median": 0.0, "std": 0.0},
+            "bullish_count": 0,
+            "bearish_count": 0,
+            "neutral_count": 0,
+            "bullish_bearish_ratio": 0.0,
+            "total_analyzed": 0,
+        }
+
+    texts = df[text_col].dropna().astype(str)
+    if len(texts) == 0:
+        logger.warning("No valid text data in column '%s'.", text_col)
+        return {
+            "polarity_scores": {"mean": 0.0, "median": 0.0, "std": 0.0},
+            "bullish_count": 0,
+            "bearish_count": 0,
+            "neutral_count": 0,
+            "bullish_bearish_ratio": 0.0,
+            "total_analyzed": 0,
+        }
+
+    try:
+        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+        analyzer = SentimentIntensityAnalyzer()
+    except ImportError:
+        logger.warning(
+            "vaderSentiment not available. Skipping sentiment analysis."
+        )
+        return {
+            "polarity_scores": {"mean": 0.0, "median": 0.0, "std": 0.0},
+            "bullish_count": 0,
+            "bearish_count": 0,
+            "neutral_count": 0,
+            "bullish_bearish_ratio": 0.0,
+            "total_analyzed": 0,
+        }
+
+    compound_scores = []
+    for text in texts:
+        scores = analyzer.polarity_scores(text)
+        compound_scores.append(scores["compound"])
+
+    import numpy as np
+
+    scores_arr = np.array(compound_scores)
+
+    bullish_count = int(np.sum(scores_arr > 0.05))
+    bearish_count = int(np.sum(scores_arr < -0.05))
+    neutral_count = int(len(scores_arr) - bullish_count - bearish_count)
+
+    if bearish_count > 0:
+        ratio = bullish_count / bearish_count
+    else:
+        ratio = float("inf") if bullish_count > 0 else 0.0
+
+    return {
+        "polarity_scores": {
+            "mean": float(np.mean(scores_arr)),
+            "median": float(np.median(scores_arr)),
+            "std": float(np.std(scores_arr)),
+        },
+        "bullish_count": bullish_count,
+        "bearish_count": bearish_count,
+        "neutral_count": neutral_count,
+        "bullish_bearish_ratio": ratio,
+        "total_analyzed": len(compound_scores),
+    }
+
+
+def assess_sentiment_reliability(
+    df: pd.DataFrame, text_col: str
+) -> dict[str, Any]:
+    """Compare at least two sentiment methods for inter-method agreement.
+
+    Compares VADER (lexicon-based) with TextBlob (pattern-based) to assess
+    whether sentiment can be extracted reliably from the text content.
+
+    Args:
+        df: The DataFrame containing text data.
+        text_col: Name of the column containing text content.
+
+    Returns:
+        Dictionary with keys:
+        - agreement_rate: proportion of texts where both methods agree on polarity
+        - correlation: Pearson correlation between the two methods' scores
+        - vader_mean: mean VADER compound score
+        - textblob_mean: mean TextBlob polarity score
+        - methods_compared: list of method names used
+        - total_compared: number of texts compared
+    """
+    if text_col not in df.columns:
+        logger.warning("Text column '%s' not found in DataFrame.", text_col)
+        return {
+            "agreement_rate": 0.0,
+            "correlation": 0.0,
+            "vader_mean": 0.0,
+            "textblob_mean": 0.0,
+            "methods_compared": [],
+            "total_compared": 0,
+        }
+
+    texts = df[text_col].dropna().astype(str).tolist()
+    if len(texts) == 0:
+        return {
+            "agreement_rate": 0.0,
+            "correlation": 0.0,
+            "vader_mean": 0.0,
+            "textblob_mean": 0.0,
+            "methods_compared": [],
+            "total_compared": 0,
+        }
+
+    try:
+        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+        from textblob import TextBlob
+    except ImportError as e:
+        logger.warning(
+            "Sentiment libraries not available: %s. Cannot assess reliability.", e
+        )
+        return {
+            "agreement_rate": 0.0,
+            "correlation": 0.0,
+            "vader_mean": 0.0,
+            "textblob_mean": 0.0,
+            "methods_compared": [],
+            "total_compared": 0,
+        }
+
+    import numpy as np
+
+    vader = SentimentIntensityAnalyzer()
+    vader_scores = []
+    textblob_scores = []
+
+    for text in texts:
+        vader_scores.append(vader.polarity_scores(text)["compound"])
+        textblob_scores.append(TextBlob(text).sentiment.polarity)
+
+    vader_arr = np.array(vader_scores)
+    textblob_arr = np.array(textblob_scores)
+
+    # Agreement: both positive, both negative, or both neutral
+    def _polarity_class(score: float, threshold: float = 0.05) -> int:
+        if score > threshold:
+            return 1
+        elif score < -threshold:
+            return -1
+        return 0
+
+    agreements = sum(
+        1
+        for v, t in zip(vader_scores, textblob_scores)
+        if _polarity_class(v) == _polarity_class(t)
+    )
+    agreement_rate = agreements / len(texts) if texts else 0.0
+
+    # Pearson correlation
+    if len(vader_arr) > 1 and np.std(vader_arr) > 0 and np.std(textblob_arr) > 0:
+        correlation = float(np.corrcoef(vader_arr, textblob_arr)[0, 1])
+    else:
+        correlation = 0.0
+
+    return {
+        "agreement_rate": agreement_rate,
+        "correlation": correlation,
+        "vader_mean": float(np.mean(vader_arr)),
+        "textblob_mean": float(np.mean(textblob_arr)),
+        "methods_compared": ["vader", "textblob"],
+        "total_compared": len(texts),
+    }
