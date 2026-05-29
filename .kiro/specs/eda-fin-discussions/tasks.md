@@ -16,13 +16,13 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Create `PipelineConfig` and `PipelineResult` dataclasses in `src/models.py`
     - _Requirements: 7.1, 7.2, 7.6, 7.7_
 
-  - [ ] 1.2 Define all core data model interfaces
+  - [x] 1.2 Define all core data model interfaces
     - Implement `DatasetMetadata`, `APIAssessment`, `QualityReport`, `SurgeConfig`, `SurgeResult`, and `PipelineError` dataclasses in `src/models.py`
     - Ensure all fields match the design document specifications
     - _Requirements: 1.3, 2.1, 2.2, 3.1, 4.1_
 
 - [ ] 2. Implement Dataset Discovery module
-  - [ ] 2.1 Implement Kaggle dataset scanner
+  - [x] 2.1 Implement Kaggle dataset scanner
     - Create `src/dataset_discovery.py`
     - Implement `scan_kaggle(search_terms: list[str]) -> list[DatasetMetadata]` that searches Kaggle for stock discussion datasets
     - Record name, source platform, record count, date range, columns, and freshness for each dataset
