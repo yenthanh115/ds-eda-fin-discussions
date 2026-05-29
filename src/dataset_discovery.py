@@ -343,3 +343,33 @@ def scan_huggingface(search_terms: list[str]) -> list[DatasetMetadata]:
         )
 
     return datasets
+
+
+def flag_incomplete_datasets(
+    datasets: list[DatasetMetadata],
+) -> list[DatasetMetadata]:
+    """Flag datasets that are missing engagement metrics or sentiment fields.
+
+    A dataset is considered incomplete for surge prediction if it lacks either
+    engagement metrics OR sentiment-related fields. This function updates the
+    `is_complete` flag on each dataset accordingly.
+
+    Args:
+        datasets: List of DatasetMetadata objects to evaluate.
+
+    Returns:
+        The same list with `is_complete` flags updated. Datasets missing
+        engagement metrics or sentiment fields will have `is_complete = False`.
+    """
+    for dataset in datasets:
+        has_engagement = _check_engagement_metrics(
+            dataset.columns, dataset.name
+        )
+        has_sentiment = _check_sentiment_fields(
+            dataset.columns, dataset.name
+        )
+        dataset.has_engagement_metrics = has_engagement
+        dataset.has_sentiment_fields = has_sentiment
+        dataset.is_complete = has_engagement and has_sentiment
+
+    return datasets

@@ -37,7 +37,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Report absence with search criteria if no datasets found
     - _Requirements: 1.2, 1.3, 1.5, 7.5_
 
-  - [ ] 2.3 Implement dataset completeness flagging
+  - [x] 2.3 Implement dataset completeness flagging
     - Implement `flag_incomplete_datasets(datasets: list[DatasetMetadata]) -> list[DatasetMetadata]`
     - Flag datasets missing engagement metrics OR sentiment-related fields as incomplete (`is_complete = False`)
     - _Requirements: 1.4_
