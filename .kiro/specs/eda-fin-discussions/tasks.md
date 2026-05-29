@@ -69,7 +69,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Assess whether API supports surge label construction
     - _Requirements: 2.2, 2.3, 2.4, 2.5_
 
-  - [ ]* 3.3 Write property test for API cost and time estimation
+  - [x]* 3.3 Write property test for API cost and time estimation
     - **Property 3: API collection cost and time estimation**
     - Use Hypothesis to generate valid rate limits and cost-per-request values, verify estimated time = N / effective_rate and cost = N * cost_per_request
     - **Validates: Requirements 2.3**
