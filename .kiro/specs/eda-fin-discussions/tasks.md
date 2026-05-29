@@ -98,7 +98,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Use Hypothesis to generate DataFrames with known null patterns, verify percentages match actual null counts / total rows, and high-risk flag triggers iff >30%
     - **Validates: Requirements 3.2**
 
-  - [ ] 5.4 Implement time coverage analysis
+  - [x] 5.4 Implement time coverage analysis
     - Implement `analyze_time_coverage(df, date_col) -> dict` analyzing date range, gaps >7 days, posting frequency
     - _Requirements: 3.3_
 
