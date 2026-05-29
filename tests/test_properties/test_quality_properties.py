@@ -133,3 +133,107 @@ class TestMissingValueComputation:
         result = compute_missing_values(df)
         assert math.isclose(result["missing_percentages"]["a"], 30.0)
         assert "a" not in result["high_risk_columns"]
+
+
+
+# --- Property 6: Temporal gap detection ---
+
+from src.dataset_quality import analyze_time_coverage
+
+
+@pytest.mark.property_test
+class TestTemporalGapDetection:
+    """Property 6: Temporal gap detection.
+
+    For any sorted sequence of timestamps, the time coverage analysis SHALL
+    identify all consecutive pairs where the gap exceeds 7 days, and the
+    reported date range SHALL span from the minimum to maximum timestamp.
+
+    Feature: eda-fin-discussions, Property 6: Temporal gap detection
+    """
+
+    @given(
+        dates=st.lists(
+            st.dates(
+                min_value=pd.Timestamp("2020-01-01").date(),
+                max_value=pd.Timestamp("2025-12-31").date(),
+            ),
+            min_size=2,
+            max_size=50,
+        )
+    )
+    @settings(max_examples=200)
+    def test_date_range_spans_min_to_max(self, dates):
+        """Reported date range spans from minimum to maximum timestamp."""
+        df = pd.DataFrame({"date": [d.isoformat() for d in dates]})
+        result = analyze_time_coverage(df, "date")
+
+        sorted_dates = sorted(dates)
+        expected_min = sorted_dates[0].isoformat()
+        expected_max = sorted_dates[-1].isoformat()
+
+        assert result["date_range"] == (expected_min, expected_max)
+
+    @given(
+        dates=st.lists(
+            st.dates(
+                min_value=pd.Timestamp("2020-01-01").date(),
+                max_value=pd.Timestamp("2025-12-31").date(),
+            ),
+            min_size=2,
+            max_size=50,
+        )
+    )
+    @settings(max_examples=200)
+    def test_all_gaps_exceeding_7_days_are_identified(self, dates):
+        """All consecutive pairs with gap > 7 days are identified."""
+        import datetime
+
+        df = pd.DataFrame({"date": [d.isoformat() for d in dates]})
+        result = analyze_time_coverage(df, "date")
+
+        sorted_dates = sorted(dates)
+        expected_gaps = []
+        for i in range(1, len(sorted_dates)):
+            gap = (sorted_dates[i] - sorted_dates[i - 1]).days
+            if gap > 7:
+                expected_gaps.append(
+                    (sorted_dates[i - 1].isoformat(), sorted_dates[i].isoformat())
+                )
+
+        assert result["temporal_gaps"] == expected_gaps
+
+    @given(
+        base_date=st.dates(
+            min_value=pd.Timestamp("2020-01-01").date(),
+            max_value=pd.Timestamp("2024-01-01").date(),
+        ),
+        num_days=st.integers(min_value=2, max_value=30),
+    )
+    @settings(max_examples=100)
+    def test_no_gaps_when_consecutive_days(self, base_date, num_days):
+        """No gaps detected when dates are consecutive days."""
+        import datetime
+
+        dates = [base_date + datetime.timedelta(days=i) for i in range(num_days)]
+        df = pd.DataFrame({"date": [d.isoformat() for d in dates]})
+        result = analyze_time_coverage(df, "date")
+
+        assert result["temporal_gaps"] == []
+        assert result["gap_count"] == 0
+
+    def test_single_large_gap_detected(self):
+        """A single gap of 30 days is detected."""
+        df = pd.DataFrame({"date": ["2024-01-01", "2024-01-31"]})
+        result = analyze_time_coverage(df, "date")
+
+        assert result["temporal_gaps"] == [("2024-01-01", "2024-01-31")]
+        assert result["gap_count"] == 1
+
+    def test_exactly_7_days_is_not_a_gap(self):
+        """A gap of exactly 7 days is NOT flagged (threshold is >7)."""
+        df = pd.DataFrame({"date": ["2024-01-01", "2024-01-08"]})
+        result = analyze_time_coverage(df, "date")
+
+        assert result["temporal_gaps"] == []
+        assert result["gap_count"] == 0

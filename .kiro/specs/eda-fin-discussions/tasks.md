@@ -102,7 +102,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Implement `analyze_time_coverage(df, date_col) -> dict` analyzing date range, gaps >7 days, posting frequency
     - _Requirements: 3.3_
 
-  - [ ]* 5.5 Write property test for temporal gap detection
+  - [x]* 5.5 Write property test for temporal gap detection
     - **Property 6: Temporal gap detection**
     - Use Hypothesis to generate sorted timestamp sequences, verify all gaps >7 days are identified and date range spans min to max
     - **Validates: Requirements 3.3**
