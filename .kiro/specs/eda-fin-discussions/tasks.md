@@ -74,7 +74,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Use Hypothesis to generate valid rate limits and cost-per-request values, verify estimated time = N / effective_rate and cost = N * cost_per_request
     - **Validates: Requirements 2.3**
 
-  - [ ]* 3.4 Write property test for surge label feasibility assessment
+  - [x]* 3.4 Write property test for surge label feasibility assessment
     - **Property 4: Surge label feasibility assessment**
     - Use Hypothesis to generate sets of API fields, verify `supports_surge_label` is True iff fields contain engagement metric + sentiment text + timestamp
     - **Validates: Requirements 2.5**
