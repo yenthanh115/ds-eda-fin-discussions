@@ -4,7 +4,7 @@
 
 This design describes a Python-based Exploratory Data Analysis (EDA) pipeline for evaluating datasets suitable for predicting engagement and sentiment surges in stock-related social media discussions. The system discovers public datasets (Kaggle, HuggingFace), assesses API collection feasibility (X/Twitter, Reddit), performs comprehensive quality analysis, operationalizes a surge definition, generates visualizations, and produces a markdown summary report with a final recommendation.
 
-The pipeline is structured as a set of Python scripts orchestrated by a single entry point, producing PNG charts and a markdown report as outputs. No Jupyter notebooks are used.
+The pipeline is structured as a set of Python scripts orchestrated by a single entry point, producing PNG charts and a markdown report as outputs. An exploration notebook (`notebooks/exploration.ipynb`) is provided for interactive analysis, importing reusable functions from `src/` modules.
 
 ## Architecture
 
@@ -37,6 +37,16 @@ flowchart TD
 4. **Surge Analysis** — Operationalizes surge definition, computes labels, evaluates class balance
 5. **Visualization** — Generates all charts as PNG files
 6. **Report Generation** — Assembles markdown report with findings and recommendation
+
+### Exploration Notebook
+
+An interactive Jupyter notebook (`notebooks/exploration.ipynb`) is provided alongside the pipeline scripts. It imports functions from `src/` modules and allows data scientists to:
+- Interactively explore candidate datasets
+- Visualize distributions and patterns
+- Experiment with surge threshold parameters
+- Document findings with inline visualizations
+
+The notebook is supplementary — the pipeline scripts remain the authoritative, reproducible execution path.
 
 ### Design Decisions
 
@@ -560,6 +570,9 @@ tests/
 │   ├── test_pipeline.py
 │   └── test_file_outputs.py
 └── conftest.py  # Shared fixtures and generators
+
+notebooks/
+└── exploration.ipynb  # Interactive EDA notebook
 ```
 
 ### Dependencies
@@ -569,4 +582,5 @@ tests/
 - **NLP**: textblob or vaderSentiment (lexicon), transformers (optional, for reliability comparison)
 - **Visualization**: matplotlib, seaborn
 - **APIs**: kaggle, huggingface_hub, praw (Reddit)
+- **Notebook**: jupyter, ipykernel
 

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This feature is an Exploratory Data Analysis (EDA) project aimed at identifying and recommending a suitable dataset for predicting whether a stock-related discussion on X/Twitter or Reddit will experience a significant engagement and sentiment surge within the next 24 hours. The project evaluates both publicly available datasets (Kaggle, HuggingFace) and API-based collection feasibility (X/Twitter API, Reddit API), then delivers a recommendation. All deliverables are Python scripts and a markdown summary report (no Jupyter notebooks).
+This feature is an Exploratory Data Analysis (EDA) project aimed at identifying and recommending a suitable dataset for predicting whether a stock-related discussion on X/Twitter or Reddit will experience a significant engagement and sentiment surge within the next 24 hours. The project evaluates both publicly available datasets (Kaggle, HuggingFace) and API-based collection feasibility (X/Twitter API, Reddit API), then delivers a recommendation. Primary deliverables are Python scripts and a markdown summary report. An exploration notebook is provided for interactive analysis.
 
 ## Glossary
 
@@ -121,12 +121,14 @@ I. Final dataset decision (go/no-go recommendation with justification)
 
 ### Requirement 7: Project Structure and Execution
 
-**User Story:** As a developer, I want the project organized as executable Python scripts with clear entry points, so that I can run the full EDA pipeline without Jupyter notebooks.
+**User Story:** As a developer, I want the project organized as executable Python scripts with clear entry points and an exploration notebook for interactive analysis, so that I can run the full EDA pipeline programmatically and also explore data interactively.
 
 #### Acceptance Criteria
 
-1. THE EDA_System SHALL organize code as Python scripts (`.py` files) with a clear entry point script that orchestrates the full pipeline.
+1. THE EDA_System SHALL organize core logic as Python scripts (`.py` files) in `src/` with a clear entry point script (`main.py`) that orchestrates the full pipeline.
 2. THE EDA_System SHALL include a `requirements.txt` file listing all Python dependencies with pinned versions.
 3. WHEN the entry point script is executed, THE EDA_System SHALL run all analysis steps in sequence and produce all outputs (charts and markdown report).
 4. THE EDA_System SHALL print progress messages to standard output indicating which analysis step is currently executing.
 5. IF a dependency is unavailable or a dataset download fails, THEN THE EDA_System SHALL log a descriptive error message and continue with remaining analysis steps where possible.
+6. THE EDA_System SHALL include an exploration Jupyter notebook (`notebooks/exploration.ipynb`) that imports analysis functions from `src/` modules for interactive data exploration and visualization.
+7. THE EDA_System SHALL include `jupyter` and `ipykernel` in the `requirements.txt` file.

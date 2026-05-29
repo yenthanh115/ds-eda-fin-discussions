@@ -7,13 +7,14 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
 ## Tasks
 
 - [ ] 1. Set up project structure and core data models
-  - [ ] 1.1 Create project directory structure and configuration
+  - [x] 1.1 Create project directory structure and configuration
     - Create `src/` directory with `__init__.py`
     - Create `tests/test_properties/`, `tests/test_unit/`, `tests/test_integration/` directories with `__init__.py` files
     - Create `output/` directory for charts and reports
-    - Create `requirements.txt` with pinned dependencies: pandas, numpy, matplotlib, seaborn, hypothesis, pytest, textblob, vaderSentiment, kaggle, huggingface_hub, praw
+    - Create `notebooks/` directory
+    - Create `requirements.txt` with pinned dependencies: pandas, numpy, matplotlib, seaborn, hypothesis, pytest, textblob, vaderSentiment, kaggle, huggingface_hub, praw, jupyter, ipykernel
     - Create `PipelineConfig` and `PipelineResult` dataclasses in `src/models.py`
-    - _Requirements: 7.1, 7.2_
+    - _Requirements: 7.1, 7.2, 7.6, 7.7_
 
   - [ ] 1.2 Define all core data model interfaces
     - Implement `DatasetMetadata`, `APIAssessment`, `QualityReport`, `SurgeConfig`, `SurgeResult`, and `PipelineError` dataclasses in `src/models.py`
@@ -176,6 +177,14 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Save as PNG files, log output file paths to stdout
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
+  - [ ] 8.2 Create interactive exploration notebook
+    - Create `notebooks/exploration.ipynb`
+    - Include sections: Dataset Loading, Structure Analysis, Missing Values, Engagement Distributions, Sentiment Analysis, Surge Threshold Exploration
+    - Import analysis functions from `src/` modules (dataset_quality, surge_analysis, visualization)
+    - Include markdown cells explaining each analysis step
+    - Include example code cells demonstrating each src/ function
+    - _Requirements: 7.6_
+
 - [ ] 9. Implement Report Generator
   - [ ] 9.1 Implement markdown report generation
     - Create `src/report_generator.py`
@@ -233,7 +242,8 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
 - Property tests validate universal correctness properties from the design document
 - Unit tests validate specific examples and edge cases
 - The pipeline uses graceful degradation: individual stage failures don't halt the entire pipeline
-- All code is Python scripts (no Jupyter notebooks) per requirement 7.1
+- All core pipeline code is Python scripts per requirement 7.1
+- The exploration notebook (`notebooks/exploration.ipynb`) provides an interactive interface for data scientists while the pipeline scripts remain the reproducible execution path
 
 ## Task Dependency Graph
 
@@ -251,7 +261,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     { "id": 8, "tasks": ["6.2", "6.3"] },
     { "id": 9, "tasks": ["6.4", "6.5"] },
     { "id": 10, "tasks": ["6.6"] },
-    { "id": 11, "tasks": ["8.1", "9.1", "9.2", "9.3"] },
+    { "id": 11, "tasks": ["8.1", "8.2", "9.1", "9.2", "9.3"] },
     { "id": 12, "tasks": ["9.4", "9.5"] },
     { "id": 13, "tasks": ["10.1", "10.2"] }
   ]
