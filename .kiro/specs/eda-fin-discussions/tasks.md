@@ -42,7 +42,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Flag datasets missing engagement metrics OR sentiment-related fields as incomplete (`is_complete = False`)
     - _Requirements: 1.4_
 
-  - [ ]* 2.4 Write property test for dataset completeness flagging
+  - [x]* 2.4 Write property test for dataset completeness flagging
     - **Property 1: Dataset completeness flagging**
     - Use Hypothesis to generate arbitrary column name sets and verify `is_complete` is False iff engagement OR sentiment columns are missing
     - **Validates: Requirements 1.4**
