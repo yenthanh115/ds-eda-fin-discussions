@@ -125,7 +125,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Implement `compare_stock_vs_general(stock_df, general_df) -> dict` comparing engagement patterns
     - _Requirements: 3.8_
 
-  - [ ] 5.10 Implement risk cataloging
+  - [x] 5.10 Implement risk cataloging
     - Implement risk discovery logic that catalogs data quality issues, biases, temporal leakage risks, and coverage gaps
     - _Requirements: 3.10_
 

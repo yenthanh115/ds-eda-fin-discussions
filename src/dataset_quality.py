@@ -491,3 +491,115 @@ def compare_stock_vs_general(
         "differences": differences,
         "distinct_behavior": distinct,
     }
+
+
+
+def catalog_risks(
+    df: pd.DataFrame,
+    missing_result: dict[str, Any] | None = None,
+    time_result: dict[str, Any] | None = None,
+    date_col: str = "date",
+    ticker_col: str = "ticker",
+) -> list[str]:
+    """Catalog data quality issues, biases, temporal leakage risks, and coverage gaps.
+
+    Inspects the DataFrame and optional pre-computed analysis results to
+    identify and document all discovered risks.
+
+    Args:
+        df: The DataFrame to analyze.
+        missing_result: Pre-computed result from compute_missing_values (optional).
+        time_result: Pre-computed result from analyze_time_coverage (optional).
+        date_col: Name of the date/timestamp column.
+        ticker_col: Name of the ticker column.
+
+    Returns:
+        List of risk description strings.
+    """
+    risks: list[str] = []
+
+    # --- Data Quality Issues ---
+
+    # Check for high-risk missing columns
+    if missing_result and missing_result.get("high_risk_columns"):
+        cols = missing_result["high_risk_columns"]
+        risks.append(
+            f"High missing data: columns {cols} have >30% missing values, "
+            "which may bias analysis or require imputation."
+        )
+
+    # Check for very small dataset
+    if len(df) < 1000:
+        risks.append(
+            f"Small dataset ({len(df)} rows): may be insufficient for "
+            "reliable statistical analysis and surge detection."
+        )
+
+    # Check for duplicate rows
+    dup_count = df.duplicated().sum()
+    if dup_count > 0:
+        dup_pct = (dup_count / len(df)) * 100 if len(df) > 0 else 0
+        risks.append(
+            f"Duplicate rows detected: {dup_count} duplicates ({dup_pct:.1f}%), "
+            "which may inflate engagement statistics."
+        )
+
+    # --- Temporal Leakage Risks ---
+
+    # Check if date column exists and is sorted
+    if date_col in df.columns:
+        dates = pd.to_datetime(df[date_col], errors="coerce").dropna()
+        if len(dates) > 0:
+            # Check for future dates
+            now = pd.Timestamp.now()
+            future_count = (dates > now).sum()
+            if future_count > 0:
+                risks.append(
+                    f"Future dates detected: {future_count} rows have dates "
+                    "in the future, indicating potential data quality issues."
+                )
+    else:
+        risks.append(
+            f"No date column '{date_col}' found: temporal analysis and "
+            "24-hour surge windowing cannot be performed."
+        )
+
+    # Check temporal gaps from pre-computed results
+    if time_result and time_result.get("gap_count", 0) > 0:
+        gap_count = time_result["gap_count"]
+        risks.append(
+            f"Temporal gaps: {gap_count} gaps >7 days detected, "
+            "which may cause discontinuities in surge detection."
+        )
+
+    # --- Bias Risks ---
+
+    # Check ticker distribution skew
+    if ticker_col in df.columns:
+        ticker_counts = df[ticker_col].value_counts()
+        if len(ticker_counts) > 1:
+            top_pct = (ticker_counts.iloc[0] / len(df)) * 100
+            if top_pct > 50:
+                risks.append(
+                    f"Ticker imbalance: top ticker '{ticker_counts.index[0]}' "
+                    f"represents {top_pct:.1f}% of data, which may bias "
+                    "per-ticker normalization."
+                )
+    else:
+        risks.append(
+            f"No ticker column '{ticker_col}' found: per-ticker "
+            "engagement normalization cannot be performed."
+        )
+
+    # --- Coverage Gaps ---
+
+    # Check for limited time span
+    if time_result and time_result.get("posting_frequency"):
+        total_days = time_result["posting_frequency"].get("total_days", 0)
+        if 0 < total_days < 90:
+            risks.append(
+                f"Short time span ({total_days} days): less than 3 months "
+                "of data may not capture seasonal patterns in engagement."
+            )
+
+    return risks
