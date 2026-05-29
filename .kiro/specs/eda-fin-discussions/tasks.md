@@ -111,7 +111,7 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Implement `compute_engagement_distributions(df, metric_cols) -> dict` computing mean, median, 90th/95th/99th percentiles
     - _Requirements: 3.4_
 
-  - [ ]* 5.7 Write property test for engagement statistics correctness
+  - [x]* 5.7 Write property test for engagement statistics correctness
     - **Property 7: Engagement statistics correctness**
     - Use Hypothesis to generate non-empty numeric arrays, verify computed statistics match mathematically correct values
     - **Validates: Requirements 3.4**

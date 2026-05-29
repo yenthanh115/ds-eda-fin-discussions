@@ -237,3 +237,108 @@ class TestTemporalGapDetection:
 
         assert result["temporal_gaps"] == []
         assert result["gap_count"] == 0
+
+
+
+# --- Property 7: Engagement statistics correctness ---
+
+from src.dataset_quality import compute_engagement_distributions
+
+
+@pytest.mark.property_test
+class TestEngagementStatisticsCorrectness:
+    """Property 7: Engagement statistics correctness.
+
+    For any non-empty numeric array, the computed summary statistics (mean,
+    median, 90th/95th/99th percentiles) SHALL match the mathematically
+    correct values for that array.
+
+    Feature: eda-fin-discussions, Property 7: Engagement statistics correctness
+    """
+
+    @given(
+        values=st.lists(
+            st.floats(min_value=0, max_value=1e6, allow_nan=False, allow_infinity=False),
+            min_size=1,
+            max_size=200,
+        )
+    )
+    @settings(max_examples=200)
+    def test_mean_matches_numpy(self, values: list[float]):
+        """Computed mean matches numpy mean."""
+        df = pd.DataFrame({"metric": values})
+        result = compute_engagement_distributions(df, ["metric"])
+
+        expected_mean = float(np.mean(values))
+        assert math.isclose(result["metric"]["mean"], expected_mean, rel_tol=1e-7)
+
+    @given(
+        values=st.lists(
+            st.floats(min_value=0, max_value=1e6, allow_nan=False, allow_infinity=False),
+            min_size=1,
+            max_size=200,
+        )
+    )
+    @settings(max_examples=200)
+    def test_median_matches_numpy(self, values: list[float]):
+        """Computed median matches numpy median."""
+        df = pd.DataFrame({"metric": values})
+        result = compute_engagement_distributions(df, ["metric"])
+
+        expected_median = float(np.median(values))
+        assert math.isclose(result["metric"]["median"], expected_median, rel_tol=1e-7)
+
+    @given(
+        values=st.lists(
+            st.floats(min_value=0, max_value=1e6, allow_nan=False, allow_infinity=False),
+            min_size=1,
+            max_size=200,
+        )
+    )
+    @settings(max_examples=200)
+    def test_percentiles_match_numpy(self, values: list[float]):
+        """Computed percentiles (p90, p95, p99) match numpy percentile."""
+        df = pd.DataFrame({"metric": values})
+        result = compute_engagement_distributions(df, ["metric"])
+
+        arr = np.array(values)
+        # pandas uses linear interpolation by default, same as numpy
+        expected_p90 = float(np.percentile(arr, 90))
+        expected_p95 = float(np.percentile(arr, 95))
+        expected_p99 = float(np.percentile(arr, 99))
+
+        assert math.isclose(result["metric"]["p90"], expected_p90, rel_tol=1e-7)
+        assert math.isclose(result["metric"]["p95"], expected_p95, rel_tol=1e-7)
+        assert math.isclose(result["metric"]["p99"], expected_p99, rel_tol=1e-7)
+
+    @given(
+        values=st.lists(
+            st.floats(min_value=0, max_value=1e6, allow_nan=False, allow_infinity=False),
+            min_size=1,
+            max_size=200,
+        )
+    )
+    @settings(max_examples=100)
+    def test_median_between_min_and_max(self, values: list[float]):
+        """Median is always between min and max of the data."""
+        df = pd.DataFrame({"metric": values})
+        result = compute_engagement_distributions(df, ["metric"])
+
+        assert result["metric"]["median"] >= min(values)
+        assert result["metric"]["median"] <= max(values)
+
+    @given(
+        values=st.lists(
+            st.floats(min_value=0, max_value=1e6, allow_nan=False, allow_infinity=False),
+            min_size=1,
+            max_size=200,
+        )
+    )
+    @settings(max_examples=100)
+    def test_percentiles_are_ordered(self, values: list[float]):
+        """p90 <= p95 <= p99 always holds."""
+        df = pd.DataFrame({"metric": values})
+        result = compute_engagement_distributions(df, ["metric"])
+
+        assert result["metric"]["p90"] <= result["metric"]["p95"]
+        assert result["metric"]["p95"] <= result["metric"]["p99"]
