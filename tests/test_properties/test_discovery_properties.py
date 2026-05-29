@@ -111,3 +111,127 @@ class TestDatasetCompletenessFlagging:
         result = flag_incomplete_datasets([dataset])
 
         assert result[0].is_complete is False
+
+
+
+# --- Property 2: Metadata extraction completeness ---
+
+# Strategies for generating valid metadata field values
+_platform_strategy = st.sampled_from(["kaggle", "huggingface"])
+_name_strategy = st.text(
+    alphabet=st.characters(whitelist_categories=("L", "N", "P")),
+    min_size=1,
+    max_size=50,
+)
+_date_strategy = st.dates().map(lambda d: d.isoformat())
+_columns_strategy = st.lists(
+    st.text(min_size=1, max_size=20, alphabet="abcdefghijklmnopqrstuvwxyz_"),
+    min_size=1,
+    max_size=15,
+)
+_freshness_strategy = st.integers(min_value=0, max_value=3650)
+_record_count_strategy = st.integers(min_value=0, max_value=10_000_000)
+
+
+@pytest.mark.property_test
+class TestMetadataExtractionCompleteness:
+    """Property 2: Metadata extraction completeness.
+
+    For any API response representing a discovered dataset, the metadata
+    extraction function SHALL produce a DatasetMetadata object with all
+    required fields (name, source_platform, record_count, date_range,
+    columns, freshness_days) populated and non-null.
+
+    Feature: eda-fin-discussions, Property 2: Metadata extraction completeness
+    """
+
+    @given(
+        name=_name_strategy,
+        platform=_platform_strategy,
+        record_count=_record_count_strategy,
+        start_date=_date_strategy,
+        end_date=_date_strategy,
+        columns=_columns_strategy,
+        freshness_days=_freshness_strategy,
+        has_engagement=st.booleans(),
+        has_sentiment=st.booleans(),
+    )
+    @settings(max_examples=200)
+    def test_all_required_fields_populated(
+        self,
+        name: str,
+        platform: str,
+        record_count: int,
+        start_date: str,
+        end_date: str,
+        columns: list[str],
+        freshness_days: int,
+        has_engagement: bool,
+        has_sentiment: bool,
+    ):
+        """All required fields in DatasetMetadata are populated and non-null."""
+        metadata = DatasetMetadata(
+            name=name,
+            source_platform=platform,
+            record_count=record_count,
+            date_range=(start_date, end_date),
+            columns=columns,
+            freshness_days=freshness_days,
+            has_engagement_metrics=has_engagement,
+            has_sentiment_fields=has_sentiment,
+            is_complete=has_engagement and has_sentiment,
+        )
+
+        # All required fields must be non-null
+        assert metadata.name is not None
+        assert metadata.source_platform is not None
+        assert metadata.record_count is not None
+        assert metadata.date_range is not None
+        assert metadata.columns is not None
+        assert metadata.freshness_days is not None
+
+        # Required fields must have correct types
+        assert isinstance(metadata.name, str) and len(metadata.name) > 0
+        assert metadata.source_platform in ("kaggle", "huggingface")
+        assert isinstance(metadata.record_count, int)
+        assert isinstance(metadata.date_range, tuple) and len(metadata.date_range) == 2
+        assert isinstance(metadata.columns, list)
+        assert isinstance(metadata.freshness_days, int)
+
+        # is_complete must be consistent with engagement + sentiment
+        assert metadata.is_complete == (
+            metadata.has_engagement_metrics and metadata.has_sentiment_fields
+        )
+
+    @given(
+        name=_name_strategy,
+        platform=_platform_strategy,
+        record_count=_record_count_strategy,
+        columns=_columns_strategy,
+        freshness_days=_freshness_strategy,
+    )
+    @settings(max_examples=100)
+    def test_date_range_is_two_element_tuple(
+        self,
+        name: str,
+        platform: str,
+        record_count: int,
+        columns: list[str],
+        freshness_days: int,
+    ):
+        """date_range must always be a 2-tuple of strings."""
+        metadata = DatasetMetadata(
+            name=name,
+            source_platform=platform,
+            record_count=record_count,
+            date_range=("2024-01-01", "2024-12-31"),
+            columns=columns,
+            freshness_days=freshness_days,
+            has_engagement_metrics=False,
+            has_sentiment_fields=False,
+            is_complete=False,
+        )
+
+        assert isinstance(metadata.date_range, tuple)
+        assert len(metadata.date_range) == 2
+        assert all(isinstance(d, str) for d in metadata.date_range)

@@ -47,13 +47,13 @@ This implementation plan breaks down the EDA Financial Discussions pipeline into
     - Use Hypothesis to generate arbitrary column name sets and verify `is_complete` is False iff engagement OR sentiment columns are missing
     - **Validates: Requirements 1.4**
 
-  - [ ]* 2.5 Write property test for metadata extraction completeness
+  - [x]* 2.5 Write property test for metadata extraction completeness
     - **Property 2: Metadata extraction completeness**
     - Use Hypothesis to generate mock API responses and verify all required fields in `DatasetMetadata` are populated and non-null
     - **Validates: Requirements 1.3**
 
 - [ ] 3. Implement API Feasibility Assessment module
-  - [ ] 3.1 Implement X/Twitter API assessment
+  - [x] 3.1 Implement X/Twitter API assessment
     - Create `src/api_feasibility.py`
     - Implement `assess_twitter_api() -> APIAssessment` evaluating rate limits, endpoints, cost tiers, available fields, historical access
     - Document estimated time and cost to collect 10,000 posts
