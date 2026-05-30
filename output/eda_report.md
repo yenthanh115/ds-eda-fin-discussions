@@ -1,6 +1,6 @@
 # EDA Financial Discussions - Analysis Report
 
-*Generated: 2026-05-30 17:50:00*
+*Generated: 2026-05-30 21:53:08*
 
 ## Executive Summary
 
@@ -8,14 +8,161 @@ This report summarizes the exploratory data analysis conducted to identify suita
 
 ### Key Findings
 
-- **Datasets discovered:** 0 (0 complete with engagement + sentiment fields)
+- **Datasets discovered:** 66 (0 complete with engagement + sentiment fields)
 - **API platforms assessed:** 2
 - **Quality reports generated:** 1 (1 suitable)
 - **Surge definitions evaluated:** 0 (0 viable with ≥2% positive class)
 
 ## Dataset Discovery Results
 
-No datasets were discovered during the scan.
+A total of **66** datasets were discovered across 2 platform(s).
+
+### Kaggle Datasets
+
+| Name | Records | Downloads | Date Range | Freshness (days) | Complete |
+|------|---------|-----------|------------|------------------|----------|
+| yash612/stockmarket-sentiment-dataset | 0 | 0 | unknown to unknown | -1 | ✗ |
+| kirolosatef/netflex-stock-dataset-with-twitter-sentiment | 0 | 0 | unknown to unknown | -1 | ✗ |
+| omermetinn/tweets-about-the-top-companies-from-2015-to-2020 | 0 | 0 | unknown to unknown | -1 | ✗ |
+| bhanupratapbiswas/twitter-stock-market-analysis-case-study | 0 | 0 | unknown to unknown | -1 | ✗ |
+| xvivancos/tweets-during-nintendo-e3-2018-conference | 0 | 0 | unknown to unknown | -1 | ✗ |
+| tejasurya/huge-stock-market-crash-2022 | 0 | 0 | unknown to unknown | -1 | ✗ |
+| xvivancos/tweets-during-r-madrid-vs-liverpool-ucl-2018 | 0 | 0 | unknown to unknown | -1 | ✗ |
+| utkarshxy/stock-markettweets-lexicon-data | 0 | 0 | unknown to unknown | -1 | ✗ |
+| xvivancos/tweets-during-cavaliers-vs-warriors | 0 | 0 | unknown to unknown | -1 | ✗ |
+| thedevastator/tweet-sentiment-s-impact-on-stock-returns | 0 | 0 | unknown to unknown | -1 | ✗ |
+| ryanchan911/selective-stock-headlines-sentiment | 0 | 0 | unknown to unknown | -1 | ✗ |
+| thedevastator/sentiment-analysis-of-us-airline-twitter-data | 0 | 0 | unknown to unknown | -1 | ✗ |
+| nadun94/twitter-sentiments-aapl-stock | 0 | 0 | unknown to unknown | -1 | ✗ |
+| berinaniesh/nifty50-jan-2020-till-jan-2023 | 0 | 0 | unknown to unknown | -1 | ✗ |
+| nawafalmazyad/genaitweets10k | 0 | 0 | unknown to unknown | -1 | ✗ |
+| rtatman/stock-market-twitter-summary-stats | 0 | 0 | unknown to unknown | -1 | ✗ |
+| mattgilgo/stock-related-tweet-sentiment | 0 | 0 | unknown to unknown | -1 | ✗ |
+| azharsaleem/us-stock-market-giants-top-companies-stocks-data | 0 | 0 | unknown to unknown | -1 | ✗ |
+| dominikgulacsy/twitter-investor-sentiment-analysis-dataset | 0 | 0 | unknown to unknown | -1 | ✗ |
+| lalorosasosorno/2019-crypto-exchange-to-bitcoin-hourly-data | 0 | 0 | unknown to unknown | -1 | ✗ |
+| gpreda/reddit-wallstreetsbets-posts | 0 | 0 | unknown to unknown | -1 | ✗ |
+| justinmiller/reddit-pennystock-data | 0 | 0 | unknown to unknown | -1 | ✗ |
+| mattpodolak/reddit-wallstreetbets-comments | 0 | 0 | unknown to unknown | -1 | ✗ |
+| susanta21/student-attitude-and-behavior | 0 | 0 | unknown to unknown | -1 | ✗ |
+| gunapro/student-behavior | 0 | 0 | unknown to unknown | -1 | ✗ |
+| nitikachandel95/student-social-media-impact-dataset | 0 | 0 | unknown to unknown | -1 | ✗ |
+| aiexplorer77/academic-performance-prediction | 0 | 0 | unknown to unknown | -1 | ✗ |
+| anthonytherrien/half-a-million-lifestyle | 0 | 0 | unknown to unknown | -1 | ✗ |
+| jonathanpaserman/fed-press-release-text | 0 | 0 | unknown to unknown | -1 | ✗ |
+| mihikaajayjadhav/top-1000-cryptocurrencies-real-time-data-2025 | 0 | 0 | unknown to unknown | -1 | ✗ |
+| amulyas/economy-business-and-finance-articles | 0 | 0 | unknown to unknown | -1 | ✗ |
+| lastman0800/social-media-dataset | 0 | 0 | unknown to unknown | -1 | ✗ |
+| jordanln/llm-prompts-in-the-context-of-machine-learning | 0 | 0 | unknown to unknown | -1 | ✗ |
+| sureshbeekhani/cryptocurrency-market-and-social-signals | 0 | 0 | unknown to unknown | -1 | ✗ |
+| thedevastator/us-congress-legislators-historical-data | 0 | 0 | unknown to unknown | -1 | ✗ |
+| farhanmittho/digital-marketing-campaigns-for-smes | 0 | 0 | unknown to unknown | -1 | ✗ |
+| sakshiandhale62442/seo-performance-data-urbanscape-apparel | 0 | 0 | unknown to unknown | -1 | ✗ |
+| techsalerator/location-sentiment-data-for-faroe-islands | 0 | 0 | unknown to unknown | -1 | ✗ |
+| rithikmurali/electronic-dance-musicedm-social-media-analytics | 0 | 0 | unknown to unknown | -1 | ✗ |
+| lucaspimeentel/us-gov-crypto-seizure-youtube-public-discourse | 0 | 0 | unknown to unknown | -1 | ✗ |
+| akibmir/finfluencer-classification-dataset | 0 | 0 | unknown to unknown | -1 | ✗ |
+| tapwell/gen-z-statistics-dataset | 0 | 0 | unknown to unknown | -1 | ✗ |
+
+### HuggingFace Datasets
+
+| Name | Records | Downloads | Date Range | Freshness (days) | Complete |
+|------|---------|-----------|------------|------------------|----------|
+| emad12/stock_tweets_sentiment | 0 | 22 | unknown to 2023-06-04 | 1091 | ✗ |
+| ic-fspml/stock_news_sentiment | 0 | 148 | unknown to 2023-09-15 | 988 | ✗ |
+| NickyNicky/finance-financialmodelingprep-stock-news-sentiments-rss-feed | 0 | 114 | unknown to 2023-10-05 | 968 | ✗ |
+| suchkow/twitter-sentiment-stock | 0 | 19 | unknown to 2024-06-01 | 727 | ✗ |
+| khaihernlow/stock-tweets-for-sentiment-analysis-and-prediction | 0 | 19 | unknown to 2024-11-16 | 559 | ✗ |
+| Marty0618/Stock_News_Sentiment | 0 | 9 | unknown to 2025-03-24 | 432 | ✗ |
+| Marty0618/Stock_News_Sentiment_Analysis_Data | 0 | 15 | unknown to 2025-03-24 | 432 | ✗ |
+| johntoro/Reddit-Stock-Sentiment | 0 | 6 | unknown to 2025-04-15 | 409 | ✗ |
+| Gowtham1243/stock-sentiment-prompts | 0 | 2 | unknown to 2025-10-18 | 224 | ✗ |
+| MatStein/Market-Sentiment-and-Stock-Price | 0 | 17 | unknown to 2026-01-12 | 138 | ✗ |
+| Tydyannes69/finance-financialmodelingprep-stock-news-sentiments-rss-feed | 0 | 28 | unknown to 2026-03-16 | 75 | ✗ |
+| will702/mendeley-indonesian-stock-sentiment | 0 | 54 | unknown to 2026-03-31 | 60 | ✗ |
+| StephanAkkerman/financial-tweets-crypto | 0 | 140 | unknown to 2024-09-05 | 631 | ✗ |
+| StephanAkkerman/financial-tweets-stocks | 0 | 121 | unknown to 2024-09-05 | 631 | ✗ |
+| StephanAkkerman/financial-tweets-other | 0 | 45 | unknown to 2024-09-05 | 631 | ✗ |
+| StephanAkkerman/financial-tweets | 0 | 96 | unknown to 2024-09-05 | 631 | ✗ |
+| TimKoornstra/financial-tweets-sentiment | 0 | 763 | unknown to 2023-12-20 | 892 | ✗ |
+| TimKoornstra/synthetic-financial-tweets-sentiment | 0 | 106 | unknown to 2024-02-23 | 827 | ✗ |
+| nojedag/financial-tweets-sentiment-multilingual | 0 | 41 | unknown to 2025-05-16 | 378 | ✗ |
+| ZombitX64/financial-sentiment-tweets | 0 | 21 | unknown to 2025-08-03 | 300 | ✗ |
+| NodecoreHQbot/financial-tweets-sentiment | 0 | 22 | unknown to 2026-05-25 | 4 | ✗ |
+| SocialGrep/reddit-wallstreetbets-aug-2021 | 0 | 204 | unknown to 2022-07-01 | 1428 | ✗ |
+| DataDump1/wallstreetbets_reddit | 0 | 5 | unknown to 2025-04-05 | 419 | ✗ |
+| sbussiso/wallstreetbets-reddit-9-30-2025 | 0 | 63 | unknown to 2025-09-30 | 241 | ✗ |
+
+### Incomplete Datasets
+
+The following datasets are flagged as incomplete for surge prediction (missing engagement metrics or sentiment fields):
+
+- **yash612/stockmarket-sentiment-dataset** (kaggle): missing engagement metrics
+- **kirolosatef/netflex-stock-dataset-with-twitter-sentiment** (kaggle): missing engagement metrics
+- **omermetinn/tweets-about-the-top-companies-from-2015-to-2020** (kaggle): missing engagement metrics, sentiment fields
+- **bhanupratapbiswas/twitter-stock-market-analysis-case-study** (kaggle): missing engagement metrics, sentiment fields
+- **xvivancos/tweets-during-nintendo-e3-2018-conference** (kaggle): missing engagement metrics, sentiment fields
+- **tejasurya/huge-stock-market-crash-2022** (kaggle): missing engagement metrics, sentiment fields
+- **xvivancos/tweets-during-r-madrid-vs-liverpool-ucl-2018** (kaggle): missing engagement metrics, sentiment fields
+- **utkarshxy/stock-markettweets-lexicon-data** (kaggle): missing engagement metrics, sentiment fields
+- **xvivancos/tweets-during-cavaliers-vs-warriors** (kaggle): missing engagement metrics, sentiment fields
+- **thedevastator/tweet-sentiment-s-impact-on-stock-returns** (kaggle): missing engagement metrics
+- **ryanchan911/selective-stock-headlines-sentiment** (kaggle): missing engagement metrics
+- **thedevastator/sentiment-analysis-of-us-airline-twitter-data** (kaggle): missing engagement metrics
+- **nadun94/twitter-sentiments-aapl-stock** (kaggle): missing engagement metrics
+- **berinaniesh/nifty50-jan-2020-till-jan-2023** (kaggle): missing engagement metrics, sentiment fields
+- **nawafalmazyad/genaitweets10k** (kaggle): missing engagement metrics, sentiment fields
+- **rtatman/stock-market-twitter-summary-stats** (kaggle): missing engagement metrics, sentiment fields
+- **mattgilgo/stock-related-tweet-sentiment** (kaggle): missing engagement metrics
+- **azharsaleem/us-stock-market-giants-top-companies-stocks-data** (kaggle): missing engagement metrics, sentiment fields
+- **dominikgulacsy/twitter-investor-sentiment-analysis-dataset** (kaggle): missing engagement metrics
+- **lalorosasosorno/2019-crypto-exchange-to-bitcoin-hourly-data** (kaggle): missing engagement metrics, sentiment fields
+- **gpreda/reddit-wallstreetsbets-posts** (kaggle): missing engagement metrics, sentiment fields
+- **justinmiller/reddit-pennystock-data** (kaggle): missing engagement metrics, sentiment fields
+- **mattpodolak/reddit-wallstreetbets-comments** (kaggle): missing sentiment fields
+- **susanta21/student-attitude-and-behavior** (kaggle): missing engagement metrics, sentiment fields
+- **gunapro/student-behavior** (kaggle): missing engagement metrics, sentiment fields
+- **nitikachandel95/student-social-media-impact-dataset** (kaggle): missing engagement metrics, sentiment fields
+- **aiexplorer77/academic-performance-prediction** (kaggle): missing engagement metrics, sentiment fields
+- **anthonytherrien/half-a-million-lifestyle** (kaggle): missing engagement metrics, sentiment fields
+- **jonathanpaserman/fed-press-release-text** (kaggle): missing engagement metrics, sentiment fields
+- **mihikaajayjadhav/top-1000-cryptocurrencies-real-time-data-2025** (kaggle): missing engagement metrics, sentiment fields
+- **amulyas/economy-business-and-finance-articles** (kaggle): missing engagement metrics, sentiment fields
+- **lastman0800/social-media-dataset** (kaggle): missing engagement metrics, sentiment fields
+- **jordanln/llm-prompts-in-the-context-of-machine-learning** (kaggle): missing engagement metrics, sentiment fields
+- **sureshbeekhani/cryptocurrency-market-and-social-signals** (kaggle): missing engagement metrics, sentiment fields
+- **thedevastator/us-congress-legislators-historical-data** (kaggle): missing engagement metrics, sentiment fields
+- **farhanmittho/digital-marketing-campaigns-for-smes** (kaggle): missing engagement metrics, sentiment fields
+- **sakshiandhale62442/seo-performance-data-urbanscape-apparel** (kaggle): missing engagement metrics, sentiment fields
+- **techsalerator/location-sentiment-data-for-faroe-islands** (kaggle): missing engagement metrics
+- **rithikmurali/electronic-dance-musicedm-social-media-analytics** (kaggle): missing engagement metrics, sentiment fields
+- **lucaspimeentel/us-gov-crypto-seizure-youtube-public-discourse** (kaggle): missing engagement metrics, sentiment fields
+- **akibmir/finfluencer-classification-dataset** (kaggle): missing engagement metrics, sentiment fields
+- **tapwell/gen-z-statistics-dataset** (kaggle): missing engagement metrics, sentiment fields
+- **emad12/stock_tweets_sentiment** (huggingface): missing engagement metrics
+- **ic-fspml/stock_news_sentiment** (huggingface): missing engagement metrics
+- **NickyNicky/finance-financialmodelingprep-stock-news-sentiments-rss-feed** (huggingface): missing engagement metrics
+- **suchkow/twitter-sentiment-stock** (huggingface): missing engagement metrics
+- **khaihernlow/stock-tweets-for-sentiment-analysis-and-prediction** (huggingface): missing engagement metrics
+- **Marty0618/Stock_News_Sentiment** (huggingface): missing engagement metrics
+- **Marty0618/Stock_News_Sentiment_Analysis_Data** (huggingface): missing engagement metrics
+- **johntoro/Reddit-Stock-Sentiment** (huggingface): missing engagement metrics
+- **Gowtham1243/stock-sentiment-prompts** (huggingface): missing engagement metrics
+- **MatStein/Market-Sentiment-and-Stock-Price** (huggingface): missing engagement metrics
+- **Tydyannes69/finance-financialmodelingprep-stock-news-sentiments-rss-feed** (huggingface): missing engagement metrics
+- **will702/mendeley-indonesian-stock-sentiment** (huggingface): missing engagement metrics
+- **StephanAkkerman/financial-tweets-crypto** (huggingface): missing engagement metrics, sentiment fields
+- **StephanAkkerman/financial-tweets-stocks** (huggingface): missing engagement metrics, sentiment fields
+- **StephanAkkerman/financial-tweets-other** (huggingface): missing engagement metrics, sentiment fields
+- **StephanAkkerman/financial-tweets** (huggingface): missing engagement metrics, sentiment fields
+- **TimKoornstra/financial-tweets-sentiment** (huggingface): missing engagement metrics
+- **TimKoornstra/synthetic-financial-tweets-sentiment** (huggingface): missing engagement metrics
+- **nojedag/financial-tweets-sentiment-multilingual** (huggingface): missing engagement metrics
+- **ZombitX64/financial-sentiment-tweets** (huggingface): missing engagement metrics
+- **NodecoreHQbot/financial-tweets-sentiment** (huggingface): missing engagement metrics
+- **SocialGrep/reddit-wallstreetbets-aug-2021** (huggingface): missing engagement metrics, sentiment fields
+- **DataDump1/wallstreetbets_reddit** (huggingface): missing engagement metrics, sentiment fields
+- **sbussiso/wallstreetbets-reddit-9-30-2025** (huggingface): missing engagement metrics, sentiment fields
 
 ## API Feasibility Findings
 
@@ -135,6 +282,10 @@ No surge analysis was performed.
 ### Sentiment Polarity Stats
 
 ![Sentiment Polarity Stats](charts/sentiment_polarity_stats.png)
+
+### Dataset Comparison
+
+![Dataset Comparison](charts/dataset_comparison.png)
 
 ## Final Recommendation
 

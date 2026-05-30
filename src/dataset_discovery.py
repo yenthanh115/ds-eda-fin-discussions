@@ -152,8 +152,16 @@ def scan_kaggle(search_terms: list[str]) -> list[DatasetMetadata]:
                 continue
             seen_names.add(name)
 
-            # Extract record count (downloadCount as proxy if totalBytes not available)
-            record_count = getattr(dataset, "downloadCount", 0) or 0
+            # Extract download count
+            download_count = getattr(dataset, "downloadCount", 0) or 0
+
+            # Attempt to get actual record count from dataset size info
+            record_count = 0
+            total_bytes = getattr(dataset, "totalBytes", None)
+            if total_bytes and total_bytes > 0:
+                # Rough heuristic: estimate rows from file size (not reliable, but better than 0)
+                # We'll try to get actual count from metadata below
+                pass
 
             # Compute freshness from lastUpdated
             last_updated = getattr(dataset, "lastUpdated", None)
@@ -175,7 +183,7 @@ def scan_kaggle(search_terms: list[str]) -> list[DatasetMetadata]:
             start_date = "unknown"
             date_range = (start_date, end_date)
 
-            # Attempt to get column information
+            # Attempt to get column information and record count
             columns: list[str] = []
             try:
                 # Try to get dataset metadata for column info
@@ -189,6 +197,11 @@ def scan_kaggle(search_terms: list[str]) -> list[DatasetMetadata]:
                                 for col in f.columns
                             )
                             break
+                    # Try to get record count from file row count if available
+                    for f in dataset_files.files:
+                        file_rows = getattr(f, "rowCount", None) or getattr(f, "totalRows", None)
+                        if file_rows and file_rows > 0:
+                            record_count += file_rows
             except Exception:
                 # Column info not readily available from search API;
                 # fall back to title-based heuristics
@@ -204,6 +217,7 @@ def scan_kaggle(search_terms: list[str]) -> list[DatasetMetadata]:
                 name=name,
                 source_platform="kaggle",
                 record_count=record_count,
+                download_count=download_count,
                 date_range=date_range,
                 columns=columns,
                 freshness_days=freshness_days,
@@ -273,10 +287,13 @@ def scan_huggingface(search_terms: list[str]) -> list[DatasetMetadata]:
                 continue
             seen_names.add(name)
 
-            # Extract record count from dataset info if available
-            record_count = 0
+            # Extract download count
+            download_count = 0
             if hasattr(dataset, "downloads"):
-                record_count = getattr(dataset, "downloads", 0) or 0
+                download_count = getattr(dataset, "downloads", 0) or 0
+
+            # Actual record count — will attempt to fetch from dataset card
+            record_count = 0
 
             # Compute freshness from lastModified
             last_modified = getattr(dataset, "lastModified", None) or getattr(
@@ -309,6 +326,24 @@ def scan_huggingface(search_terms: list[str]) -> list[DatasetMetadata]:
                     features = getattr(info.card_data, "features", None)
                     if features and isinstance(features, dict):
                         columns = list(features.keys())
+                    # Try to get record count from dataset_size or download_size
+                    dataset_size = getattr(info.card_data, "dataset_size", None)
+                    if dataset_size and isinstance(dataset_size, int):
+                        record_count = dataset_size
+                # Try dataset_info num_rows from config metadata
+                if record_count == 0 and hasattr(info, "card_data") and info.card_data:
+                    configs = getattr(info.card_data, "configs", None) or getattr(
+                        info.card_data, "dataset_info", None
+                    )
+                    if configs and isinstance(configs, list):
+                        for config in configs:
+                            if isinstance(config, dict):
+                                splits = config.get("splits", [])
+                                if isinstance(splits, list):
+                                    for split in splits:
+                                        if isinstance(split, dict):
+                                            num_rows = split.get("num_examples", 0) or split.get("num_rows", 0)
+                                            record_count += num_rows
             except Exception:
                 # Column info not readily available; fall back to title heuristics
                 pass
@@ -327,6 +362,7 @@ def scan_huggingface(search_terms: list[str]) -> list[DatasetMetadata]:
                 name=name,
                 source_platform="huggingface",
                 record_count=record_count,
+                download_count=download_count,
                 date_range=date_range,
                 columns=columns,
                 freshness_days=freshness_days,

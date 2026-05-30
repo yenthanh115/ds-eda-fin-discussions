@@ -10,7 +10,8 @@ class DatasetMetadata:
 
     name: str
     source_platform: str  # "kaggle" | "huggingface"
-    record_count: int
+    record_count: int  # actual number of rows/records (0 if unknown)
+    download_count: int  # number of times the dataset was downloaded
     date_range: tuple[str, str]  # (start, end) ISO dates
     columns: list[str]
     freshness_days: int

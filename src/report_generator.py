@@ -154,12 +154,15 @@ def _generate_discovery_section(discovery_results: list[DatasetMetadata]) -> str
 def _format_dataset_table(datasets: list[DatasetMetadata]) -> str:
     """Format a list of datasets as a markdown table."""
     lines = []
-    lines.append("| Name | Records | Date Range | Freshness (days) | Complete |")
-    lines.append("|------|---------|------------|------------------|----------|")
+    lines.append("| Name | Records | Downloads | Date Range | Freshness (days) | Complete |")
+    lines.append("|------|---------|-----------|------------|------------------|----------|")
     for d in datasets:
         date_range = f"{d.date_range[0]} to {d.date_range[1]}"
         complete = "✓" if d.is_complete else "✗"
-        lines.append(f"| {d.name} | {d.record_count:,} | {date_range} | {d.freshness_days} | {complete} |")
+        lines.append(
+            f"| {d.name} | {d.record_count:,} | {d.download_count:,} "
+            f"| {date_range} | {d.freshness_days} | {complete} |"
+        )
     return "\n".join(lines)
 
 
