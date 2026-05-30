@@ -1,6 +1,6 @@
 # EDA Financial Discussions - Analysis Report
 
-*Generated: 2026-05-30 11:02:25*
+*Generated: 2026-05-30 17:50:00*
 
 ## Executive Summary
 
@@ -10,7 +10,7 @@ This report summarizes the exploratory data analysis conducted to identify suita
 
 - **Datasets discovered:** 0 (0 complete with engagement + sentiment fields)
 - **API platforms assessed:** 2
-- **Quality reports generated:** 0 (0 suitable)
+- **Quality reports generated:** 1 (1 suitable)
 - **Surge definitions evaluated:** 0 (0 viable with ≥2% positive class)
 
 ## Dataset Discovery Results
@@ -79,7 +79,40 @@ The following fields require paid access:
 
 ## EDA Statistics
 
-No quality analysis was performed.
+### StockMarket_subreddit.csv
+
+#### Dataset Structure
+
+- **Records:** 72,620
+- **Tickers:** 0
+- **Columns:** 7
+- **Date range:** 1970-01-01 to 1970-01-01
+- **Recommendation:** suitable
+
+#### Missing Values
+
+| Column | Missing % |
+|--------|-----------|
+| selftext | 29.2% |
+
+#### Engagement Statistics
+
+| Metric | Mean | Median | P90 | P95 | P99 |
+|--------|------|--------|-----|-----|-----|
+| score | 6.3 | 1.0 | 7.0 | 16.0 | 97.0 |
+| num_comments | 8.1 | 1.0 | 17.0 | 32.0 | 124.0 |
+
+#### Sentiment Statistics
+
+- **mean:** 0.000
+- **median:** 0.000
+- **std:** 0.000
+- **Bullish/Bearish ratio:** 0.00
+
+#### Identified Risks
+
+- Duplicate rows detected: 1103 duplicates (1.5%), which may inflate engagement statistics.
+- No ticker column 'ticker' found: per-ticker engagement normalization cannot be performed.
 
 ## Surge Analysis Results
 
@@ -87,7 +120,21 @@ No surge analysis was performed.
 
 ## Visualizations
 
-No charts were generated.
+### Engagement Distribution Score
+
+![Engagement Distribution Score](charts/engagement_distribution_score.png)
+
+### Engagement Distribution Num Comments
+
+![Engagement Distribution Num Comments](charts/engagement_distribution_num_comments.png)
+
+### Sentiment Class Distribution
+
+![Sentiment Class Distribution](charts/sentiment_class_distribution.png)
+
+### Sentiment Polarity Stats
+
+![Sentiment Polarity Stats](charts/sentiment_polarity_stats.png)
 
 ## Final Recommendation
 
@@ -102,7 +149,12 @@ Recommend API collection via 'reddit API' as the best data path. Key strengths: 
    - Fast collection time
    - Supports surge label construction
    - Some fields require paid access: full historical archive, real-time streaming
-2. **twitter API** (score: 0.770)
+2. **StockMarket_subreddit.csv** (score: 0.780)
+   - High data completeness with few missing values
+   - Large dataset suitable for model training
+   - Good temporal coverage with minimal gaps
+   - 2 risk(s) identified: Duplicate rows detected: 1103 duplicates (1.5%), which may inflate engagement statistics., No ticker column 'ticker' found: per-ticker engagement normalization cannot be performed.
+3. **twitter API** (score: 0.770)
    - Fast collection time
    - Supports surge label construction
    - No historical data access - requires prospective collection

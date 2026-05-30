@@ -172,7 +172,11 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> Pipeli
         for dataset_path in dataset_files:
             try:
                 print(f"  Analyzing: {os.path.basename(dataset_path)}")
-                df = pd.read_csv(dataset_path)
+                df = pd.read_csv(dataset_path,
+                                sep=";",
+                                quotechar='"',
+                                index_col=0,
+                                engine="python")
 
                 # Structure analysis
                 structure = analyze_structure(df)
@@ -285,7 +289,11 @@ def _run_surge_stage(config: PipelineConfig, result: PipelineResult) -> Pipeline
 
         for dataset_path in dataset_files:
             try:
-                df = pd.read_csv(dataset_path)
+                df = pd.read_csv(dataset_path,
+                                sep=";",
+                                quotechar='"',
+                                index_col=0,
+                                engine="python")
                 print(f"  Analyzing surges in: {os.path.basename(dataset_path)}")
 
                 engagement_cols = _detect_engagement_columns(df)
@@ -378,7 +386,11 @@ def _run_visualization_stage(config: PipelineConfig, result: PipelineResult) -> 
             dataset_files = _find_dataset_files(config)
             for dataset_path in dataset_files:
                 try:
-                    df = pd.read_csv(dataset_path)
+                    df = pd.read_csv(dataset_path,
+                                    sep=";",
+                                    quotechar='"',
+                                    index_col=0,
+                                    engine="python")
                     timestamp_col = _detect_date_column(df)
                     engagement_cols = _detect_engagement_columns(df)
                     sentiment_col = _detect_sentiment_column(df)
