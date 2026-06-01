@@ -13,6 +13,7 @@ If a stage fails, the pipeline logs the error and continues with
 remaining stages, producing a partial report.
 """
 
+import csv
 import logging
 import os
 import sys
@@ -172,11 +173,7 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> Pipeli
         for dataset_path in dataset_files:
             try:
                 print(f"  Analyzing: {os.path.basename(dataset_path)}")
-                df = pd.read_csv(dataset_path,
-                                sep=";",
-                                quotechar='"',
-                                index_col=0,
-                                engine="python")
+                df = _load_dataset(dataset_path)
 
                 # Structure analysis
                 structure = analyze_structure(df)
@@ -289,11 +286,7 @@ def _run_surge_stage(config: PipelineConfig, result: PipelineResult) -> Pipeline
 
         for dataset_path in dataset_files:
             try:
-                df = pd.read_csv(dataset_path,
-                                sep=";",
-                                quotechar='"',
-                                index_col=0,
-                                engine="python")
+                df = _load_dataset(dataset_path)
                 print(f"  Analyzing surges in: {os.path.basename(dataset_path)}")
 
                 engagement_cols = _detect_engagement_columns(df)
@@ -386,11 +379,7 @@ def _run_visualization_stage(config: PipelineConfig, result: PipelineResult) -> 
             dataset_files = _find_dataset_files(config)
             for dataset_path in dataset_files:
                 try:
-                    df = pd.read_csv(dataset_path,
-                                    sep=";",
-                                    quotechar='"',
-                                    index_col=0,
-                                    engine="python")
+                    df = _load_dataset(dataset_path)
                     timestamp_col = _detect_date_column(df)
                     engagement_cols = _detect_engagement_columns(df)
                     sentiment_col = _detect_sentiment_column(df)
@@ -485,6 +474,42 @@ def _print_summary(result: PipelineResult) -> None:
 
 
 # ─── Helper Functions ───────────────────────────────────────────────────────
+
+
+def _detect_delimiter(filepath: str, sample_size: int = 8192) -> str:
+    """Detect the delimiter used in a CSV file by sniffing a sample.
+
+    Args:
+        filepath: Path to the CSV file.
+        sample_size: Number of bytes to read for sniffing.
+
+    Returns:
+        The detected delimiter character. Defaults to ',' if detection fails.
+    """
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            sample = f.read(sample_size)
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t|")
+        return dialect.delimiter
+    except csv.Error:
+        logger.warning(
+            "Could not detect delimiter for '%s', defaulting to ','.", filepath
+        )
+        return ","
+
+
+def _load_dataset(filepath: str) -> pd.DataFrame:
+    """Load a CSV dataset with auto-detected delimiter.
+
+    Args:
+        filepath: Path to the CSV file.
+
+    Returns:
+        DataFrame loaded from the file.
+    """
+    sep = _detect_delimiter(filepath)
+    logger.info("Loading '%s' with detected delimiter: %r", filepath, sep)
+    return pd.read_csv(filepath, sep=sep, index_col=0, engine="python")
 
 
 def _find_dataset_files(config: PipelineConfig) -> list[str]:
