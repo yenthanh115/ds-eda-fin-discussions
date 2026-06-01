@@ -546,15 +546,43 @@ def _find_dataset_files(config: PipelineConfig) -> list[str]:
 
 
 def _detect_date_column(df: pd.DataFrame) -> str | None:
-    """Detect the most likely date/timestamp column in a DataFrame."""
+    """Detect the most likely date/timestamp column in a DataFrame.
+
+    Uses a three-tier strategy:
+    1. Columns already typed as datetime (cheapest check).
+    2. Name-based keyword matching.
+    3. Dtype probe — samples object/string columns and attempts date parsing.
+    """
     date_keywords = ["date", "timestamp", "created_at", "created_utc", "time", "posted_at"]
+
+    # 1. Check for columns already typed as datetime
+    datetime_cols = df.select_dtypes(include=["datetime", "datetimetz"]).columns.tolist()
+    if len(datetime_cols) == 1:
+        return datetime_cols[0]
+    if len(datetime_cols) > 1:
+        # Multiple datetime cols — prefer one with a date-related name
+        for col in datetime_cols:
+            if col.lower() in date_keywords or any(kw in col.lower() for kw in ["date", "time"]):
+                return col
+        return datetime_cols[0]
+
+    # 2. Name-based keyword matching
     for col in df.columns:
         if col.lower() in date_keywords:
             return col
-    # Fallback: try to find any column that parses as datetime
     for col in df.columns:
         if any(kw in col.lower() for kw in ["date", "time"]):
             return col
+
+    # 3. Dtype probe — try parsing object/string columns as dates
+    for col in df.select_dtypes(include=["object", "string"]).columns:
+        sample = df[col].dropna().head(20)
+        if len(sample) == 0:
+            continue
+        parsed = pd.to_datetime(sample, errors="coerce", format="mixed")
+        if parsed.notna().sum() >= len(sample) * 0.8:
+            return col
+
     return None
 
 
@@ -594,12 +622,40 @@ def _detect_sentiment_column(df: pd.DataFrame) -> str | None:
 
 
 def _detect_ticker_column(df: pd.DataFrame) -> str | None:
-    """Detect the most likely stock ticker column in a DataFrame."""
+    """Detect the most likely stock ticker column in a DataFrame.
+
+    If no explicit ticker column exists, attempts to extract tickers from
+    text columns and adds a 'ticker' column to the DataFrame in-place.
+    """
     ticker_keywords = ["ticker", "symbol", "stock", "stock_symbol"]
     for col in df.columns:
         if col.lower() in ticker_keywords:
             return col
-    return None
+
+    # No explicit ticker column found — attempt extraction from text
+    try:
+        from src.ticker_extraction import add_ticker_column_if_missing
+
+        df_with_ticker = add_ticker_column_if_missing(df, ticker_col="ticker")
+        # Update the original DataFrame in-place with the new column
+        df["ticker"] = df_with_ticker["ticker"]
+
+        # Check if extraction found any real tickers
+        non_unknown = (df["ticker"] != "UNKNOWN").sum()
+        if non_unknown > 0:
+            logger.info(
+                f"Extracted tickers from text for {non_unknown}/{len(df)} rows "
+                f"({df['ticker'].nunique()} unique tickers)"
+            )
+            return "ticker"
+        else:
+            logger.warning("Ticker extraction found no tickers in text columns.")
+            # Remove the all-UNKNOWN column — not useful for per-ticker normalization
+            df.drop(columns=["ticker"], inplace=True)
+            return None
+    except Exception as e:
+        logger.warning(f"Ticker extraction failed: {e}")
+        return None
 
 
 def _evaluate_eda_objectives(

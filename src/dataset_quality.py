@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 def analyze_structure(df: pd.DataFrame, ticker_col: str = "ticker") -> dict[str, Any]:
     """Document dataset structure including schema, types, record count, and ticker count.
 
+    If the specified ticker column is not present, attempts to extract tickers
+    from text columns using the ticker_extraction module.
+
     Args:
         df: The DataFrame to analyze.
         ticker_col: Name of the column containing stock ticker symbols.
@@ -25,7 +28,7 @@ def analyze_structure(df: pd.DataFrame, ticker_col: str = "ticker") -> dict[str,
         - schema: dict mapping column name -> dtype string
         - record_count: total number of rows
         - column_count: total number of columns
-        - ticker_count: number of unique tickers (0 if ticker_col not present)
+        - ticker_count: number of unique tickers (0 if no tickers found)
         - columns: list of column names
     """
     schema = {col: str(dtype) for col, dtype in df.dtypes.items()}
@@ -35,6 +38,17 @@ def analyze_structure(df: pd.DataFrame, ticker_col: str = "ticker") -> dict[str,
     ticker_count = 0
     if ticker_col in df.columns:
         ticker_count = df[ticker_col].nunique()
+    else:
+        # Attempt ticker extraction from text columns
+        try:
+            from src.ticker_extraction import add_ticker_column_if_missing
+
+            df_with_ticker = add_ticker_column_if_missing(df, ticker_col=ticker_col)
+            # Count unique tickers excluding "UNKNOWN"
+            extracted = df_with_ticker[ticker_col]
+            ticker_count = extracted[extracted != "UNKNOWN"].nunique()
+        except Exception:
+            ticker_count = 0
 
     return {
         "schema": schema,
@@ -574,9 +588,36 @@ def catalog_risks(
 
     # --- Bias Risks ---
 
-    # Check ticker distribution skew
+    # Check ticker distribution skew (attempt extraction if column missing)
+    ticker_series = None
     if ticker_col in df.columns:
-        ticker_counts = df[ticker_col].value_counts()
+        ticker_series = df[ticker_col]
+    else:
+        try:
+            from src.ticker_extraction import add_ticker_column_if_missing
+
+            df_with_ticker = add_ticker_column_if_missing(df, ticker_col=ticker_col)
+            extracted = df_with_ticker[ticker_col]
+            non_unknown = extracted[extracted != "UNKNOWN"]
+            if len(non_unknown) > 0:
+                ticker_series = extracted
+            else:
+                risks.append(
+                    f"No ticker column '{ticker_col}' found and ticker extraction "
+                    "from text yielded no results: per-ticker engagement "
+                    "normalization cannot be performed."
+                )
+        except Exception:
+            risks.append(
+                f"No ticker column '{ticker_col}' found: per-ticker "
+                "engagement normalization cannot be performed."
+            )
+
+    if ticker_series is not None:
+        ticker_counts = ticker_series.value_counts()
+        # Exclude "UNKNOWN" from imbalance check if it's an extracted column
+        if "UNKNOWN" in ticker_counts.index:
+            ticker_counts = ticker_counts.drop("UNKNOWN")
         if len(ticker_counts) > 1:
             top_pct = (ticker_counts.iloc[0] / len(df)) * 100
             if top_pct > 50:
@@ -585,11 +626,6 @@ def catalog_risks(
                     f"represents {top_pct:.1f}% of data, which may bias "
                     "per-ticker normalization."
                 )
-    else:
-        risks.append(
-            f"No ticker column '{ticker_col}' found: per-ticker "
-            "engagement normalization cannot be performed."
-        )
 
     # --- Coverage Gaps ---
 
