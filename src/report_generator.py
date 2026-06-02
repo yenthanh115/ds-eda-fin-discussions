@@ -453,10 +453,21 @@ def _generate_recommendation_section(
         lines.append("### Ranked Options\n")
         for option in recommendation["ranked_options"]:
             rank = option["rank"]
-            lines.append(f"{rank}. **{option['name']}** (score: {option['score']:.3f})")
+            lines.append(f"{rank}. **{option['name']}** (overall score: {option['score']:.3f})")
             if option.get("trade_offs"):
                 for trade_off in option["trade_offs"]:
                     lines.append(f"   - {trade_off}")
+            # Show detailed scoring breakdown per criterion
+            if option.get("scores"):
+                lines.append("")
+                lines.append(f"   **Scoring Breakdown:**\n")
+                lines.append("   | Criterion | Score | Weight | Comment |")
+                lines.append("   |-----------|-------|--------|---------|")
+                for criterion, score_val, weight, comment in option["scores"]:
+                    lines.append(
+                        f"   | {criterion} | {score_val:.2f} | {weight} | {comment} |"
+                    )
+                lines.append("")
         lines.append("")
 
     if recommendation.get("gaps"):
@@ -748,6 +759,7 @@ def make_recommendation(
             "name": option["name"],
             "score": round(option["overall_score"], 3),
             "trade_offs": option["trade_offs"],
+            "scores": _format_score_details(option["type"], option["scores"]),
         })
 
     # Determine gaps
@@ -803,6 +815,141 @@ def make_recommendation(
         "gaps": gaps,
         "next_steps": _suggest_next_steps(gaps, surge_viability) if gaps else [],
     }
+
+
+def _format_score_details(option_type: str, scores: dict) -> list[tuple[str, float, str, str]]:
+    """Format scoring details with comments for display in the report.
+
+    Returns a list of tuples: (criterion_name, score_value, weight, comment).
+    """
+    if option_type == "public_dataset":
+        return [
+            ("Completeness", scores["completeness"], "25%",
+             _comment_completeness(scores["completeness"])),
+            ("Volume", scores["volume"], "20%",
+             _comment_volume(scores["volume"])),
+            ("Temporal Coverage", scores["temporal"], "20%",
+             _comment_temporal(scores["temporal"])),
+            ("Ticker Diversity", scores["diversity"], "15%",
+             _comment_diversity(scores["diversity"])),
+            ("Risk", scores["risk"], "20%",
+             _comment_risk(scores["risk"])),
+        ]
+    else:  # api_collection
+        return [
+            ("Cost", scores["cost"], "25%",
+             _comment_cost(scores["cost"])),
+            ("Collection Time", scores["time"], "20%",
+             _comment_time(scores["time"])),
+            ("Feasibility", scores["feasibility"], "25%",
+             _comment_feasibility(scores["feasibility"])),
+            ("Historical Access", scores["historical"], "15%",
+             _comment_historical(scores["historical"])),
+            ("Field Availability", scores["fields"], "15%",
+             _comment_fields(scores["fields"])),
+        ]
+
+
+def _comment_completeness(score: float) -> str:
+    if score >= 0.9:
+        return "Excellent - very few missing values"
+    elif score >= 0.7:
+        return "Good - minor missing data"
+    elif score >= 0.5:
+        return "Moderate - some high-risk columns"
+    else:
+        return "Poor - significant missing data requiring imputation"
+
+
+def _comment_volume(score: float) -> str:
+    if score >= 1.0:
+        return "Excellent - 100k+ records"
+    elif score >= 0.8:
+        return "Good - 10k-100k records"
+    elif score >= 0.5:
+        return "Moderate - 1k-10k records"
+    else:
+        return "Low - fewer than 1k records"
+
+
+def _comment_temporal(score: float) -> str:
+    if score >= 1.0:
+        return "No temporal gaps detected"
+    elif score >= 0.7:
+        return "Minor gaps (≤3 gaps >7 days)"
+    elif score >= 0.4:
+        return "Notable gaps (4-10 gaps >7 days)"
+    else:
+        return "Severe temporal discontinuities (>10 gaps)"
+
+
+def _comment_diversity(score: float) -> str:
+    if score >= 1.0:
+        return "Excellent - 50+ tickers covered"
+    elif score >= 0.7:
+        return "Good - 10-49 tickers"
+    elif score >= 0.4:
+        return "Limited - 3-9 tickers"
+    else:
+        return "Very limited - fewer than 3 tickers"
+
+
+def _comment_risk(score: float) -> str:
+    if score >= 1.0:
+        return "No risks identified"
+    elif score >= 0.7:
+        return "Minor risks (1-2 issues)"
+    elif score >= 0.4:
+        return "Moderate risks (3-4 issues)"
+    else:
+        return "High risk - multiple data quality issues"
+
+
+def _comment_cost(score: float) -> str:
+    if score >= 1.0:
+        return "Free access"
+    elif score >= 0.8:
+        return "Low cost (≤$50)"
+    elif score >= 0.5:
+        return "Moderate cost ($50-$200)"
+    elif score >= 0.3:
+        return "High cost ($200-$1000)"
+    else:
+        return "Very expensive (>$1000)"
+
+
+def _comment_time(score: float) -> str:
+    if score >= 1.0:
+        return "Very fast (≤1 hour)"
+    elif score >= 0.7:
+        return "Reasonable (1-10 hours)"
+    elif score >= 0.4:
+        return "Slow (10-100 hours)"
+    else:
+        return "Very slow (>100 hours)"
+
+
+def _comment_feasibility(score: float) -> str:
+    if score >= 1.0:
+        return "Supports surge label construction"
+    else:
+        return "Does not support surge label construction"
+
+
+def _comment_historical(score: float) -> str:
+    if score >= 1.0:
+        return "Historical data access available"
+    else:
+        return "No historical access - prospective only"
+
+
+def _comment_fields(score: float) -> str:
+    if score >= 1.0:
+        return "Rich field set (10+ fields)"
+    elif score >= 0.7:
+        return "Adequate fields (5-9)"
+    else:
+        return "Limited fields (<5)"
 
 
 def _dataset_trade_offs(report: QualityReport, scores: dict) -> list[str]:
