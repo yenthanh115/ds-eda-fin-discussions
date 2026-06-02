@@ -22,6 +22,8 @@ import time
 import pandas as pd
 
 from src.models import (
+    DatasetStore,
+    EnrichedDataset,
     PipelineConfig,
     PipelineError,
     PipelineResult,
@@ -69,22 +71,31 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
     result = _run_api_feasibility_stage(config, result)
     stage_timings["API Feasibility"] = time.perf_counter() - t0
 
+    # ─── Dataset Preparation: Load & Enrich Once ────────────────────────
+    print("Preparing datasets: Loading & enriching...")
+    t0 = time.perf_counter()
+    store = _load_and_enrich_datasets(config)
+    stage_timings["Dataset Preparation"] = time.perf_counter() - t0
+    print(f"  Loaded {len(store)} dataset(s)")
+    if store.load_errors:
+        result.errors.extend(store.load_errors)
+
     # ─── Stage 3/6: Dataset Quality Analysis ────────────────────────────
     print("Stage 3/6: Dataset Quality Analysis...")
     t0 = time.perf_counter()
-    result, dataset_timings = _run_quality_stage(config, result)
+    result, dataset_timings = _run_quality_stage(config, result, store)
     stage_timings["Dataset Quality"] = time.perf_counter() - t0
 
     # ─── Stage 4/6: Surge Analysis ──────────────────────────────────────
     print("Stage 4/6: Surge Analysis...")
     t0 = time.perf_counter()
-    result = _run_surge_stage(config, result)
+    result = _run_surge_stage(config, result, store)
     stage_timings["Surge Analysis"] = time.perf_counter() - t0
 
     # ─── Stage 5/6: Visualization ───────────────────────────────────────
     print("Stage 5/6: Visualization...")
     t0 = time.perf_counter()
-    result = _run_visualization_stage(config, result)
+    result = _run_visualization_stage(config, result, store)
     stage_timings["Visualization"] = time.perf_counter() - t0
 
     # ─── Stage 6/6: Report Generation ───────────────────────────────────
@@ -166,11 +177,12 @@ def _run_api_feasibility_stage(config: PipelineConfig, result: PipelineResult) -
     return result
 
 
-def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[PipelineResult, dict[str, float]]:
+def _run_quality_stage(config: PipelineConfig, result: PipelineResult, store: DatasetStore) -> tuple[PipelineResult, dict[str, float]]:
     """Execute the dataset quality analysis stage.
 
-    Note: This stage requires actual dataset files to be available for loading.
-    If no datasets can be loaded, it produces an empty quality report list.
+    Uses pre-loaded and enriched datasets from the DatasetStore rather than
+    re-loading from disk. Column metadata (date_col, text_col, etc.) is
+    already detected during the preparation phase.
 
     Returns:
         Tuple of (PipelineResult, dataset_timings dict mapping dataset name to seconds).
@@ -188,10 +200,7 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[
         )
         from src.report_generator import evaluate_dataset_suitability
 
-        # Attempt to load datasets from the output directory or common locations
-        dataset_files = _find_dataset_files(config)
-
-        if not dataset_files:
+        if len(store) == 0:
             print("  No dataset files found for quality analysis. Skipping.")
             result.errors.append(
                 "Dataset Quality Analysis: No dataset files found to analyze. "
@@ -199,11 +208,11 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[
             )
             return result, dataset_timings
 
-        for dataset_path in dataset_files:
+        for ds in store:
             try:
-                print(f"  Analyzing: {os.path.basename(dataset_path)}")
+                print(f"  Analyzing: {ds.name}")
                 ds_start = time.perf_counter()
-                df = _load_dataset(dataset_path)
+                df = ds.df
 
                 # Structure analysis
                 structure = analyze_structure(df)
@@ -214,8 +223,7 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[
                 missing = compute_missing_values(df)
 
                 # Time coverage
-                date_col = _detect_date_column(df)
-                time_coverage = analyze_time_coverage(df, date_col) if date_col else {
+                time_coverage = analyze_time_coverage(df, ds.date_col) if ds.date_col else {
                     "date_range": ("unknown", "unknown"),
                     "temporal_gaps": [],
                     "posting_frequency": {"posts_per_day": 0.0, "total_days": 0},
@@ -223,21 +231,19 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[
                 }
 
                 # Engagement distributions
-                engagement_cols = _detect_engagement_columns(df)
-                engagement_stats = compute_engagement_distributions(df, engagement_cols)
+                engagement_stats = compute_engagement_distributions(df, ds.engagement_cols)
 
                 # Sentiment analysis
-                text_col = _detect_text_column(df)
                 sentiment_stats = {}
                 bullish_bearish_ratio = 0.0
                 sentiment_reliability = None
 
-                if text_col:
-                    sentiment_result = analyze_sentiment(df, text_col)
+                if ds.text_col:
+                    sentiment_result = analyze_sentiment(df, ds.text_col)
                     sentiment_stats = sentiment_result.get("polarity_scores", {})
                     bullish_bearish_ratio = sentiment_result.get("bullish_bearish_ratio", 0.0)
 
-                    reliability = assess_sentiment_reliability(df, text_col)
+                    reliability = assess_sentiment_reliability(df, ds.text_col)
                     if reliability.get("total_compared", 0) > 0:
                         sentiment_reliability = {
                             "agreement_rate": reliability["agreement_rate"],
@@ -249,19 +255,19 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[
                     df,
                     missing_result=missing,
                     time_result=time_coverage,
-                    date_col=date_col or "date",
+                    date_col=ds.date_col or "date",
                 )
 
                 # Evaluate suitability
                 objective_results = _evaluate_eda_objectives(
                     structure, missing, time_coverage, engagement_stats,
-                    sentiment_stats, text_col, engagement_cols
+                    sentiment_stats, ds.text_col, ds.engagement_cols
                 )
                 suitability = evaluate_dataset_suitability(objective_results)
 
                 # Build QualityReport
                 quality_report = QualityReport(
-                    dataset_name=os.path.basename(dataset_path),
+                    dataset_name=ds.name,
                     schema=structure["schema"],
                     record_count=structure["record_count"],
                     ticker_count=structure["ticker_count"],
@@ -281,12 +287,12 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[
                 )
                 result.quality_reports.append(quality_report)
                 ds_elapsed = time.perf_counter() - ds_start
-                dataset_timings[os.path.basename(dataset_path)] = ds_elapsed
+                dataset_timings[ds.name] = ds_elapsed
                 print(f"    Recommendation: {suitability['recommendation']}")
                 print(f"    ⏱ Dataset processed in {ds_elapsed:.2f}s")
 
             except Exception as e:
-                error_msg = f"Quality analysis failed for {dataset_path}: {e}"
+                error_msg = f"Quality analysis failed for {ds.path}: {e}"
                 logger.error(error_msg)
                 result.errors.append(error_msg)
 
@@ -298,57 +304,61 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[
     return result, dataset_timings
 
 
-def _run_surge_stage(config: PipelineConfig, result: PipelineResult) -> PipelineResult:
-    """Execute the surge analysis stage."""
+def _run_surge_stage(config: PipelineConfig, result: PipelineResult, store: DatasetStore) -> PipelineResult:
+    """Execute the surge analysis stage.
+
+    Uses pre-loaded and enriched datasets from the DatasetStore. Sentiment
+    and ticker columns are already computed during the preparation phase.
+    """
     try:
         from src.surge_analysis import (
             check_timestamp_resolution,
             evaluate_surge_definitions,
-            normalize_engagement,
         )
 
-        # Surge analysis requires loaded datasets with engagement + sentiment + timestamps
-        dataset_files = _find_dataset_files(config)
-
-        if not dataset_files:
+        if len(store) == 0:
             print("  No dataset files found for surge analysis. Skipping.")
             result.errors.append(
                 "Surge Analysis: No dataset files available for surge computation."
             )
             return result
 
-        for dataset_path in dataset_files:
+        for ds in store:
             try:
-                df = _load_dataset(dataset_path)
-                print(f"  Analyzing surges in: {os.path.basename(dataset_path)}")
+                print(f"  Analyzing surges in: {ds.name}")
                 surge_ds_start = time.perf_counter()
 
-                engagement_cols = _detect_engagement_columns(df)
-                sentiment_col = _detect_sentiment_column(df)
-                timestamp_col = _detect_date_column(df)
-                ticker_col = _detect_ticker_column(df)
-
-                if not engagement_cols or not sentiment_col or not timestamp_col or not ticker_col:
-                    msg = (f"  Skipping {os.path.basename(dataset_path)}: "
-                           f"missing required columns for surge analysis")
+                if not ds.engagement_cols or not ds.sentiment_col or not ds.date_col or not ds.ticker_col:
+                    missing_parts = []
+                    if not ds.engagement_cols:
+                        missing_parts.append("engagement")
+                    if not ds.sentiment_col:
+                        missing_parts.append("sentiment")
+                    if not ds.date_col:
+                        missing_parts.append("timestamp")
+                    if not ds.ticker_col:
+                        missing_parts.append("ticker")
+                    msg = (f"  Skipping {ds.name}: "
+                           f"missing required columns for surge analysis "
+                           f"({', '.join(missing_parts)})")
                     print(msg)
                     result.errors.append(msg)
                     continue
 
                 # Check timestamp resolution
-                ts_resolution = check_timestamp_resolution(df, timestamp_col)
+                ts_resolution = check_timestamp_resolution(ds.df, ds.date_col)
                 print(f"    Timestamp resolution: {ts_resolution['resolution']} "
                       f"(sufficient: {ts_resolution['sufficient']})")
 
                 # Evaluate surge definitions
                 surge_results = evaluate_surge_definitions(
-                    df,
+                    ds.df,
                     percentiles=config.surge_percentiles,
                     std_devs=config.surge_std_devs,
-                    engagement_cols=engagement_cols,
-                    sentiment_col=sentiment_col,
-                    timestamp_col=timestamp_col,
-                    ticker_col=ticker_col,
+                    engagement_cols=ds.engagement_cols,
+                    sentiment_col=ds.sentiment_col,
+                    timestamp_col=ds.date_col,
+                    ticker_col=ds.ticker_col,
                 )
 
                 viable_count = sum(1 for r in surge_results if r.is_viable)
@@ -360,7 +370,7 @@ def _run_surge_stage(config: PipelineConfig, result: PipelineResult) -> Pipeline
                 result.surge_results.extend(surge_results)
 
             except Exception as e:
-                error_msg = f"Surge analysis failed for {dataset_path}: {e}"
+                error_msg = f"Surge analysis failed for {ds.path}: {e}"
                 logger.error(error_msg)
                 result.errors.append(error_msg)
 
@@ -372,8 +382,12 @@ def _run_surge_stage(config: PipelineConfig, result: PipelineResult) -> Pipeline
     return result
 
 
-def _run_visualization_stage(config: PipelineConfig, result: PipelineResult) -> PipelineResult:
-    """Execute the visualization stage."""
+def _run_visualization_stage(config: PipelineConfig, result: PipelineResult, store: DatasetStore) -> PipelineResult:
+    """Execute the visualization stage.
+
+    Uses pre-loaded and enriched datasets from the DatasetStore for surge
+    frequency chart generation.
+    """
     try:
         from src.visualization import (
             generate_dataset_comparison,
@@ -411,17 +425,9 @@ def _run_visualization_stage(config: PipelineConfig, result: PipelineResult) -> 
 
         # Surge frequency chart
         if result.surge_results:
-            # Build a minimal surge DataFrame for visualization
-            dataset_files = _find_dataset_files(config)
-            for dataset_path in dataset_files:
-                try:
-                    df = _load_dataset(dataset_path)
-                    timestamp_col = _detect_date_column(df)
-                    engagement_cols = _detect_engagement_columns(df)
-                    sentiment_col = _detect_sentiment_column(df)
-                    ticker_col = _detect_ticker_column(df)
-
-                    if timestamp_col and engagement_cols and sentiment_col and ticker_col:
+            for ds in store:
+                if ds.date_col and ds.engagement_cols and ds.sentiment_col and ds.ticker_col:
+                    try:
                         from src.surge_analysis import compute_surge_labels
 
                         default_config = SurgeConfig(
@@ -430,19 +436,19 @@ def _run_visualization_stage(config: PipelineConfig, result: PipelineResult) -> 
                             time_window_hours=config.surge_window_hours,
                         )
                         surge_labels = compute_surge_labels(
-                            df, default_config, engagement_cols,
-                            sentiment_col, timestamp_col, ticker_col
+                            ds.df, default_config, ds.engagement_cols,
+                            ds.sentiment_col, ds.date_col, ds.ticker_col
                         )
-                        surge_df = df[[timestamp_col]].copy()
-                        surge_df = surge_df.rename(columns={timestamp_col: "timestamp"})
+                        surge_df = ds.df[[ds.date_col]].copy()
+                        surge_df = surge_df.rename(columns={ds.date_col: "timestamp"})
                         surge_df["surge"] = surge_labels
 
                         print("  Generating surge frequency chart...")
                         path = generate_surge_frequency(surge_df, chart_dir)
                         result.chart_paths.append(path)
                         break  # Only generate for first viable dataset
-                except Exception as e:
-                    logger.warning(f"Could not generate surge frequency chart: {e}")
+                    except Exception as e:
+                        logger.warning(f"Could not generate surge frequency chart: {e}")
 
         # Dataset comparison chart
         if result.datasets_discovered:
@@ -518,6 +524,63 @@ def _print_summary(result: PipelineResult, stage_timings: dict[str, float], tota
 
 
 # ─── Helper Functions ───────────────────────────────────────────────────────
+
+
+def _load_and_enrich_datasets(config: PipelineConfig) -> DatasetStore:
+    """Load all CSV files once and compute shared enrichments.
+
+    Finds candidate CSV files, loads each one, runs column detection
+    and enrichment (sentiment, ticker), and returns a populated
+    DatasetStore ready for consumption by downstream stages.
+    """
+    store = DatasetStore()
+    dataset_files = _find_dataset_files(config)
+
+    if not dataset_files:
+        logger.warning("No CSV dataset files found in search directories.")
+        return store
+
+    for filepath in dataset_files:
+        try:
+            df = _load_dataset(filepath)
+            name = os.path.basename(filepath)
+
+            # Detect columns
+            date_col = _detect_date_column(df)
+            text_col = _detect_text_column(df)
+            engagement_cols = _detect_engagement_columns(df)
+            sentiment_col = _detect_sentiment_column(df)
+            ticker_col = _detect_ticker_column(df)
+
+            # Compute sentiment if missing
+            if not sentiment_col and text_col:
+                sentiment_col = _compute_sentiment_column(df, text_col)
+                if sentiment_col:
+                    print(f"  [{name}] Computed sentiment from '{text_col}' column")
+
+            enriched = EnrichedDataset(
+                path=filepath,
+                name=name,
+                df=df,
+                date_col=date_col,
+                text_col=text_col,
+                sentiment_col=sentiment_col,
+                ticker_col=ticker_col,
+                engagement_cols=engagement_cols,
+            )
+            store.add(enriched)
+            logger.info(
+                f"Enriched '{name}': date={date_col}, text={text_col}, "
+                f"sentiment={sentiment_col}, ticker={ticker_col}, "
+                f"engagement={engagement_cols}"
+            )
+
+        except Exception as e:
+            error_msg = f"Failed to load/enrich dataset '{filepath}': {e}"
+            logger.error(error_msg)
+            store.load_errors.append(error_msg)
+
+    return store
 
 
 def _detect_delimiter(filepath: str, sample_size: int = 8192) -> str:
@@ -665,6 +728,30 @@ def _detect_sentiment_column(df: pd.DataFrame) -> str | None:
         if col.lower() in sentiment_keywords:
             return col
     return None
+
+
+def _compute_sentiment_column(df: pd.DataFrame, text_col: str) -> str | None:
+    """Compute a sentiment column from text using VADER and add it to df in-place.
+
+    Returns the name of the added column ('sentiment') on success, or None on failure.
+    """
+    try:
+        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+        analyzer = SentimentIntensityAnalyzer()
+    except ImportError:
+        logger.warning("vaderSentiment not available. Cannot compute sentiment column.")
+        return None
+
+    if text_col not in df.columns:
+        return None
+
+    texts = df[text_col].fillna("")
+    compound_scores = texts.apply(
+        lambda t: analyzer.polarity_scores(str(t))["compound"]
+    )
+    df["sentiment"] = compound_scores
+    return "sentiment"
 
 
 def _detect_ticker_column(df: pd.DataFrame) -> str | None:

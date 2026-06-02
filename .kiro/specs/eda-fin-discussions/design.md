@@ -14,15 +14,16 @@ The system follows a sequential pipeline architecture where each stage produces 
 flowchart TD
     A[main.py - Entry Point] --> B[dataset_discovery.py]
     A --> C[api_feasibility.py]
-    A --> D[dataset_quality.py]
-    A --> E[surge_analysis.py]
-    A --> F[visualization.py]
+    A --> LOAD[_load_and_enrich_datasets]
+    LOAD --> |DatasetStore| D[dataset_quality.py]
+    LOAD --> |DatasetStore| E[surge_analysis.py]
+    LOAD --> |DatasetStore| F[visualization.py]
     A --> G[report_generator.py]
 
-    B --> |Dataset catalog| D
+    B --> |Dataset catalog| G
     C --> |API assessment| G
-    D --> |EDA statistics| E
-    D --> |EDA statistics| F
+    D --> |QualityReport| E
+    D --> |QualityReport| F
     E --> |Surge labels & stats| F
     E --> |Surge labels & stats| G
     F --> |Chart file paths| G
@@ -51,19 +52,102 @@ The notebook is supplementary — the pipeline scripts remain the authoritative,
 ### Design Decisions
 
 - **Sequential pipeline over DAG**: The analysis stages have clear dependencies and modest data sizes, so a simple sequential orchestration is sufficient. No need for a workflow engine.
-- **Intermediate results as DataFrames/dicts**: Stages pass results as pandas DataFrames and Python dictionaries. No intermediate file serialization between stages (except final outputs).
+- **Load once, share via DatasetStore**: All CSV datasets are loaded and enriched exactly once in a dedicated preparation phase. The resulting `DatasetStore` (containing multiple `EnrichedDataset` instances) is passed by reference to every downstream stage. This eliminates redundant I/O, avoids recomputing derived columns (sentiment, ticker extraction, normalization), and ensures all stages operate on the same enriched snapshot.
 - **Graceful degradation**: If a stage fails (e.g., dataset download unavailable), the pipeline logs the error and continues with remaining stages, producing a partial report.
 
 ## Components and Interfaces
 
+### 0. Shared Dataset Store (`src/dataset_store.py`)
+
+Provides a load-once, use-everywhere container for enriched datasets. Each loaded CSV is wrapped in an `EnrichedDataset` that carries the DataFrame alongside detected/computed column metadata. The `DatasetStore` holds all loaded datasets and is passed to stages 3–5.
+
+```python
+@dataclass
+class EnrichedDataset:
+    """A single loaded dataset with detected/computed column metadata."""
+    path: str
+    name: str  # basename of the file
+    df: pd.DataFrame
+    date_col: str | None = None
+    text_col: str | None = None
+    sentiment_col: str | None = None
+    ticker_col: str | None = None
+    engagement_cols: list[str] = field(default_factory=list)
+
+
+@dataclass
+class DatasetStore:
+    """Container for all loaded and enriched datasets in the pipeline."""
+    datasets: list[EnrichedDataset] = field(default_factory=list)
+
+    def add(self, dataset: EnrichedDataset) -> None:
+        self.datasets.append(dataset)
+
+    def __iter__(self):
+        return iter(self.datasets)
+
+    def __len__(self):
+        return len(self.datasets)
+```
+
+**Enrichment lifecycle** — performed once during the preparation phase in `main.py`:
+
+1. Load CSV with auto-detected delimiter
+2. Detect date column (datetime typed → name keyword → dtype probe)
+3. Detect text column (keyword match)
+4. Detect engagement columns (keyword match)
+5. Detect or compute sentiment column (existing column or VADER from text)
+6. Detect or extract ticker column (existing column or regex extraction from text)
+
+After enrichment, each `EnrichedDataset` carries all column names that downstream stages need — no stage re-runs detection logic.
+
 ### 1. Entry Point (`main.py`)
 
-Orchestrates the full pipeline, handles CLI arguments, and manages error recovery.
+Orchestrates the full pipeline, handles CLI arguments, and manages error recovery. The entry point includes a **dataset preparation phase** that builds the `DatasetStore` before analysis stages run.
 
 ```python
 def run_pipeline(config: PipelineConfig) -> PipelineResult:
     """Execute all analysis stages in sequence."""
     ...
+
+def _load_and_enrich_datasets(config: PipelineConfig) -> DatasetStore:
+    """Load all CSV files once and compute shared enrichments.
+
+    Finds candidate CSV files, loads each one, runs column detection
+    and enrichment (sentiment, ticker), and returns a populated
+    DatasetStore ready for consumption by downstream stages.
+    """
+    ...
+```
+
+**Revised pipeline flow:**
+
+```python
+def run_pipeline(config: PipelineConfig) -> PipelineResult:
+    result = PipelineResult()
+
+    # Stage 1: Dataset Discovery (no CSV loading)
+    result = _run_discovery_stage(config, result)
+
+    # Stage 2: API Feasibility (no CSV loading)
+    result = _run_api_feasibility_stage(config, result)
+
+    # ── Load & enrich all datasets once ──────────────────────────
+    store = _load_and_enrich_datasets(config)
+
+    # Stage 3: Quality Analysis (receives store)
+    result = _run_quality_stage(config, result, store)
+
+    # Stage 4: Surge Analysis (receives store)
+    result = _run_surge_stage(config, result, store)
+
+    # Stage 5: Visualization (receives store)
+    result = _run_visualization_stage(config, result, store)
+
+    # Stage 6: Report Generation
+    result = _run_report_stage(config, result)
+
+    return result
 ```
 
 ### 2. Dataset Discovery (`src/dataset_discovery.py`)
@@ -121,6 +205,8 @@ def assess_reddit_api() -> APIAssessment:
 
 ### 4. Dataset Quality Analyzer (`src/dataset_quality.py`)
 
+Receives `EnrichedDataset` instances from the `DatasetStore`. Uses pre-detected column metadata (date_col, text_col, engagement_cols) instead of re-running detection.
+
 ```python
 @dataclass
 class QualityReport:
@@ -167,6 +253,8 @@ def compare_stock_vs_general(stock_df: pd.DataFrame, general_df: pd.DataFrame) -
 ```
 
 ### 5. Surge Analyzer (`src/surge_analysis.py`)
+
+Receives `EnrichedDataset` instances from the `DatasetStore`. Operates on pre-enriched DataFrames that already have sentiment and ticker columns computed.
 
 ```python
 @dataclass
@@ -218,6 +306,8 @@ def check_timestamp_resolution(df: pd.DataFrame, timestamp_col: str) -> dict:
 
 ### 6. Visualization Engine (`src/visualization.py`)
 
+Receives `EnrichedDataset` instances from the `DatasetStore` for surge frequency chart generation. Uses pre-computed surge labels and pre-detected timestamp columns.
+
 ```python
 def generate_engagement_distributions(stats: dict, output_dir: str) -> list[str]:
     """Generate engagement metric distribution charts. Returns file paths."""
@@ -266,6 +356,45 @@ def make_recommendation(
 ```python
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+import pandas as pd
+
+
+@dataclass
+class EnrichedDataset:
+    """A single loaded dataset with detected/computed column metadata.
+
+    Produced once during the dataset preparation phase and shared
+    across all downstream stages (quality, surge, visualization).
+    """
+    path: str
+    name: str  # os.path.basename(path)
+    df: pd.DataFrame
+    date_col: str | None = None
+    text_col: str | None = None
+    sentiment_col: str | None = None
+    ticker_col: str | None = None
+    engagement_cols: list[str] = field(default_factory=list)
+
+
+@dataclass
+class DatasetStore:
+    """Container for all loaded and enriched datasets in the pipeline.
+
+    Built once by _load_and_enrich_datasets() and passed to stages 3-5.
+    Supports iteration and length queries for convenience.
+    """
+    datasets: list[EnrichedDataset] = field(default_factory=list)
+
+    def add(self, dataset: EnrichedDataset) -> None:
+        self.datasets.append(dataset)
+
+    def __iter__(self):
+        return iter(self.datasets)
+
+    def __len__(self):
+        return len(self.datasets)
+
 
 @dataclass
 class PipelineConfig:
@@ -375,6 +504,11 @@ flowchart LR
         CSV[Downloaded CSVs]
     end
 
+    subgraph Preparation
+        LOAD[Load & Enrich]
+        STORE[(DatasetStore)]
+    end
+
     subgraph Processing
         DS[Dataset Discovery]
         QA[Quality Analysis]
@@ -388,8 +522,12 @@ flowchart LR
 
     K --> DS
     H --> DS
-    DS --> |DatasetMetadata| QA
-    CSV --> QA
+    CSV --> LOAD
+    LOAD --> STORE
+    STORE --> QA
+    STORE --> SA
+    STORE --> Charts
+    DS --> |DatasetMetadata| Report
     QA --> |QualityReport| SA
     SA --> |SurgeResult| Charts
     QA --> Charts

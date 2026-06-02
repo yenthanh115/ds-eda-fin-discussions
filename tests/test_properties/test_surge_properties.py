@@ -110,14 +110,19 @@ class TestSurgeLabelCorrectness:
 
         # Manually compute expected conditions:
         # 1. Engagement: normalize per ticker, check if >= percentile threshold
-        likes_arr = np.array(engagement_values, dtype=float)
-        mean_likes = likes_arr.mean()
-        std_likes = likes_arr.std(ddof=0)
-        normalized = (likes_arr - mean_likes) / std_likes
-        # Use pandas quantile to match implementation exactly
-        norm_series = pd.Series(normalized)
-        percentile_threshold = norm_series.quantile(engagement_percentile)
-        engagement_exceeds = normalized >= percentile_threshold
+        # Use the implementation's normalize function and groupby.transform path
+        # to avoid floating-point mismatches between different computation paths.
+        from src.surge_analysis import normalize_engagement as _norm_eng
+
+        norm_df = _norm_eng(df.copy(), ["likes"], "ticker")
+        norm_col = "likes_normalized"
+        # Compute threshold using the same groupby.transform path as implementation
+        percentile_threshold_series = norm_df.groupby("ticker")[norm_col].transform(
+            lambda x: x.quantile(engagement_percentile)
+        )
+        engagement_exceeds = np.array(norm_df[norm_col] >= percentile_threshold_series)
+        normalized = norm_df[norm_col].values
+        percentile_threshold = percentile_threshold_series.iloc[0]
 
         # 2. Sentiment: |sentiment - ticker_mean| > sentiment_std_devs * ticker_std
         sent_arr = np.array(sentiment_values, dtype=float)

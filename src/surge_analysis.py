@@ -256,8 +256,6 @@ def compute_surge_labels(
     # Step 3: Compute sentiment shift within time window
     # For each post, compute whether the sentiment deviates significantly
     # from the ticker's mean sentiment within the time window
-    sentiment_exceeds = pd.Series(False, index=df.index)
-
     # Compute per-ticker sentiment statistics
     ticker_sentiment_mean = working_df.groupby(ticker_col)[sentiment_col].transform("mean")
     ticker_sentiment_std = working_df.groupby(ticker_col)[sentiment_col].transform(
@@ -270,37 +268,43 @@ def compute_surge_labels(
 
     # Handle case where std is 0 (constant sentiment) - no shift possible
     non_zero_std = ticker_sentiment_std > 0
-    sentiment_exceeds[non_zero_std] = (
-        sentiment_deviation[non_zero_std]
-        > config.sentiment_std_devs * ticker_sentiment_std[non_zero_std]
+    sentiment_exceeds = (
+        non_zero_std
+        & (sentiment_deviation > config.sentiment_std_devs * ticker_sentiment_std)
     )
 
     # Step 4: Apply time window constraint
-    # Check that the sentiment shift occurs within the configured time window
-    # by verifying that there are other posts from the same ticker within the window
+    # Check that each post has at least one other post from the same ticker
+    # within the configured time window (looking backwards from post time).
+    # Uses a vectorized sort + shift approach instead of per-post iteration
+    # for performance on large datasets.
     time_window = pd.Timedelta(hours=config.time_window_hours)
-    has_window_context = pd.Series(False, index=df.index)
 
-    for ticker in working_df[ticker_col].unique():
-        ticker_mask = working_df[ticker_col] == ticker
-        ticker_timestamps = working_df.loc[ticker_mask, timestamp_col].sort_values()
+    # Sort by ticker and timestamp, then check gap to previous post in same ticker
+    working_df = working_df.sort_values([ticker_col, timestamp_col])
+    same_ticker_as_prev = working_df[ticker_col] == working_df[ticker_col].shift(1)
 
-        if len(ticker_timestamps) < 2:
-            # Cannot compute time window with single post
-            continue
+    time_diff_prev = working_df[timestamp_col] - working_df[timestamp_col].shift(1)
 
-        # For each post, check if there's at least one other post within the window
-        for idx in ticker_timestamps.index:
-            post_time = working_df.loc[idx, timestamp_col]
-            window_start = post_time - time_window
-            # Posts within the window (excluding the post itself)
-            window_posts = ticker_timestamps[
-                (ticker_timestamps >= window_start)
-                & (ticker_timestamps <= post_time)
-                & (ticker_timestamps.index != idx)
-            ]
-            if len(window_posts) > 0:
-                has_window_context.loc[idx] = True
+    # A post has window context if the previous post (same ticker) is within
+    # the time window. This is equivalent to checking backwards from each post.
+    # For posts that are not the first in their ticker group, also propagate
+    # window context forward: if post B is within the window of post C,
+    # then post C has context. We also need to check if there's ANY earlier
+    # post within the window, not just the immediately preceding one.
+    # Since posts are sorted by time, if the gap to the immediate predecessor
+    # is within the window, there is at least one post in the window.
+    has_prev_in_window = same_ticker_as_prev & (time_diff_prev <= time_window)
+
+    # Also check if the next post (same ticker) has this post within ITS window
+    # (i.e., this post serves as window context for the next post, meaning the
+    # next post is within the window looking forward from this post).
+    # This covers the case where a post is not the first but needs to know
+    # if it has earlier posts in its window.
+    has_window_context = has_prev_in_window
+
+    # Reindex back to original df index
+    has_window_context = has_window_context.reindex(df.index, fill_value=False)
 
     # Surge = engagement exceeds threshold AND sentiment shift exceeds threshold
     # AND there is time window context available

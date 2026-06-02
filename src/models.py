@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+import pandas as pd
+
 
 @dataclass
 class DatasetMetadata:
@@ -89,6 +91,45 @@ class PipelineError:
     severity: str  # "warning" | "error" | "fatal"
     message: str
     recoverable: bool
+
+
+@dataclass
+class EnrichedDataset:
+    """A single loaded dataset with detected/computed column metadata.
+
+    Produced once during the dataset preparation phase and shared
+    across all downstream stages (quality, surge, visualization).
+    """
+
+    path: str
+    name: str  # os.path.basename(path)
+    df: pd.DataFrame
+    date_col: str | None = None
+    text_col: str | None = None
+    sentiment_col: str | None = None
+    ticker_col: str | None = None
+    engagement_cols: list[str] = field(default_factory=list)
+
+
+@dataclass
+class DatasetStore:
+    """Container for all loaded and enriched datasets in the pipeline.
+
+    Built once by _load_and_enrich_datasets() and passed to stages 3-5.
+    Supports iteration and length queries for convenience.
+    """
+
+    datasets: list["EnrichedDataset"] = field(default_factory=list)
+    load_errors: list[str] = field(default_factory=list)
+
+    def add(self, dataset: "EnrichedDataset") -> None:
+        self.datasets.append(dataset)
+
+    def __iter__(self):
+        return iter(self.datasets)
+
+    def __len__(self):
+        return len(self.datasets)
 
 
 @dataclass
