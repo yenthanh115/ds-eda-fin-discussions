@@ -17,6 +17,7 @@ import csv
 import logging
 import os
 import sys
+import time
 
 import pandas as pd
 
@@ -53,32 +54,56 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
     result = PipelineResult()
     os.makedirs(config.output_dir, exist_ok=True)
 
+    pipeline_start = time.perf_counter()
+    stage_timings: dict[str, float] = {}
+
     # ─── Stage 1/6: Dataset Discovery ───────────────────────────────────
     print("Stage 1/6: Dataset Discovery...")
+    t0 = time.perf_counter()
     result = _run_discovery_stage(config, result)
+    stage_timings["Dataset Discovery"] = time.perf_counter() - t0
 
     # ─── Stage 2/6: API Feasibility Assessment ──────────────────────────
     print("Stage 2/6: API Feasibility Assessment...")
+    t0 = time.perf_counter()
     result = _run_api_feasibility_stage(config, result)
+    stage_timings["API Feasibility"] = time.perf_counter() - t0
 
     # ─── Stage 3/6: Dataset Quality Analysis ────────────────────────────
     print("Stage 3/6: Dataset Quality Analysis...")
-    result = _run_quality_stage(config, result)
+    t0 = time.perf_counter()
+    result, dataset_timings = _run_quality_stage(config, result)
+    stage_timings["Dataset Quality"] = time.perf_counter() - t0
 
     # ─── Stage 4/6: Surge Analysis ──────────────────────────────────────
     print("Stage 4/6: Surge Analysis...")
+    t0 = time.perf_counter()
     result = _run_surge_stage(config, result)
+    stage_timings["Surge Analysis"] = time.perf_counter() - t0
 
     # ─── Stage 5/6: Visualization ───────────────────────────────────────
     print("Stage 5/6: Visualization...")
+    t0 = time.perf_counter()
     result = _run_visualization_stage(config, result)
+    stage_timings["Visualization"] = time.perf_counter() - t0
 
     # ─── Stage 6/6: Report Generation ───────────────────────────────────
     print("Stage 6/6: Report Generation...")
-    result = _run_report_stage(config, result)
+    t0 = time.perf_counter()
+    # Compute total elapsed up to this point (report gen timing will be added after)
+    pre_report_elapsed = time.perf_counter() - pipeline_start
+    timing_info = {
+        "stage_timings": stage_timings,
+        "dataset_timings": dataset_timings,
+        "total_elapsed": pre_report_elapsed,
+    }
+    result = _run_report_stage(config, result, timing_info)
+    stage_timings["Report Generation"] = time.perf_counter() - t0
+
+    total_elapsed = time.perf_counter() - pipeline_start
 
     # ─── Summary ────────────────────────────────────────────────────────
-    _print_summary(result)
+    _print_summary(result, stage_timings, total_elapsed)
 
     return result
 
@@ -141,12 +166,16 @@ def _run_api_feasibility_stage(config: PipelineConfig, result: PipelineResult) -
     return result
 
 
-def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> PipelineResult:
+def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> tuple[PipelineResult, dict[str, float]]:
     """Execute the dataset quality analysis stage.
 
     Note: This stage requires actual dataset files to be available for loading.
     If no datasets can be loaded, it produces an empty quality report list.
+
+    Returns:
+        Tuple of (PipelineResult, dataset_timings dict mapping dataset name to seconds).
     """
+    dataset_timings: dict[str, float] = {}
     try:
         from src.dataset_quality import (
             analyze_sentiment,
@@ -168,11 +197,12 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> Pipeli
                 "Dataset Quality Analysis: No dataset files found to analyze. "
                 "Place CSV files in the project root or output directory."
             )
-            return result
+            return result, dataset_timings
 
         for dataset_path in dataset_files:
             try:
                 print(f"  Analyzing: {os.path.basename(dataset_path)}")
+                ds_start = time.perf_counter()
                 df = _load_dataset(dataset_path)
 
                 # Structure analysis
@@ -250,7 +280,10 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> Pipeli
                     recommendation=suitability["recommendation"],
                 )
                 result.quality_reports.append(quality_report)
+                ds_elapsed = time.perf_counter() - ds_start
+                dataset_timings[os.path.basename(dataset_path)] = ds_elapsed
                 print(f"    Recommendation: {suitability['recommendation']}")
+                print(f"    ⏱ Dataset processed in {ds_elapsed:.2f}s")
 
             except Exception as e:
                 error_msg = f"Quality analysis failed for {dataset_path}: {e}"
@@ -262,7 +295,7 @@ def _run_quality_stage(config: PipelineConfig, result: PipelineResult) -> Pipeli
         logger.error(error_msg)
         result.errors.append(error_msg)
 
-    return result
+    return result, dataset_timings
 
 
 def _run_surge_stage(config: PipelineConfig, result: PipelineResult) -> PipelineResult:
@@ -288,6 +321,7 @@ def _run_surge_stage(config: PipelineConfig, result: PipelineResult) -> Pipeline
             try:
                 df = _load_dataset(dataset_path)
                 print(f"  Analyzing surges in: {os.path.basename(dataset_path)}")
+                surge_ds_start = time.perf_counter()
 
                 engagement_cols = _detect_engagement_columns(df)
                 sentiment_col = _detect_sentiment_column(df)
@@ -320,6 +354,8 @@ def _run_surge_stage(config: PipelineConfig, result: PipelineResult) -> Pipeline
                 viable_count = sum(1 for r in surge_results if r.is_viable)
                 print(f"    Evaluated {len(surge_results)} definitions, "
                       f"{viable_count} viable")
+                surge_ds_elapsed = time.perf_counter() - surge_ds_start
+                print(f"    ⏱ Surge analysis for dataset in {surge_ds_elapsed:.2f}s")
 
                 result.surge_results.extend(surge_results)
 
@@ -425,7 +461,7 @@ def _run_visualization_stage(config: PipelineConfig, result: PipelineResult) -> 
     return result
 
 
-def _run_report_stage(config: PipelineConfig, result: PipelineResult) -> PipelineResult:
+def _run_report_stage(config: PipelineConfig, result: PipelineResult, timing_info: dict | None = None) -> PipelineResult:
     """Execute the report generation stage."""
     try:
         from src.report_generator import generate_report
@@ -440,6 +476,7 @@ def _run_report_stage(config: PipelineConfig, result: PipelineResult) -> Pipelin
             surge_results=result.surge_results,
             chart_paths=result.chart_paths,
             output_path=report_path,
+            timing_info=timing_info,
         )
         result.report_path = generated_path
         print(f"  Report generated: {generated_path}")
@@ -452,7 +489,7 @@ def _run_report_stage(config: PipelineConfig, result: PipelineResult) -> Pipelin
     return result
 
 
-def _print_summary(result: PipelineResult) -> None:
+def _print_summary(result: PipelineResult, stage_timings: dict[str, float], total_elapsed: float) -> None:
     """Print a summary of the pipeline execution."""
     print("\n" + "=" * 60)
     print("Pipeline Execution Complete")
@@ -470,6 +507,13 @@ def _print_summary(result: PipelineResult) -> None:
             print(f"    - {error}")
     else:
         print("\n  No errors encountered.")
+
+    # Timing breakdown
+    print("\n  ⏱ Timing Breakdown:")
+    for stage_name, elapsed in stage_timings.items():
+        print(f"    {stage_name:<25} {elapsed:>8.2f}s")
+    print(f"    {'─' * 35}")
+    print(f"    {'TOTAL':<25} {total_elapsed:>8.2f}s")
     print("=" * 60)
 
 
@@ -509,7 +553,9 @@ def _load_dataset(filepath: str) -> pd.DataFrame:
     """
     sep = _detect_delimiter(filepath)
     logger.info("Loading '%s' with detected delimiter: %r", filepath, sep)
-    return pd.read_csv(filepath, sep=sep, index_col=0, engine="python")
+    return pd.read_csv(
+        filepath, sep=sep, index_col=0, engine="python", on_bad_lines="warn"
+    )
 
 
 def _find_dataset_files(config: PipelineConfig) -> list[str]:

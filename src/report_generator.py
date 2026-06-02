@@ -14,6 +14,7 @@ def generate_report(
     surge_results: list[SurgeResult],
     chart_paths: list[str],
     output_path: str,
+    timing_info: dict[str, Any] | None = None,
 ) -> str:
     """Generate comprehensive markdown report. Returns file path.
 
@@ -24,6 +25,10 @@ def generate_report(
         surge_results: List of surge definition evaluation results.
         chart_paths: List of paths to generated chart files.
         output_path: Path where the markdown report will be written.
+        timing_info: Optional dict with timing data. Expected keys:
+            - stage_timings: dict mapping stage name to elapsed seconds
+            - dataset_timings: dict mapping dataset name to elapsed seconds
+            - total_elapsed: total pipeline duration in seconds
 
     Returns:
         The file path of the generated report.
@@ -53,6 +58,10 @@ def generate_report(
 
     # Charts
     sections.append(_generate_charts_section(chart_paths, output_path))
+
+    # Performance Timing
+    if timing_info:
+        sections.append(_generate_timing_section(timing_info))
 
     # Final Recommendation
     sections.append(_generate_recommendation_section(
@@ -384,6 +393,35 @@ def _generate_charts_section(chart_paths: list[str], output_path: str) -> str:
 
         lines.append(f"### {chart_title}\n")
         lines.append(f"![{chart_title}]({rel_path})\n")
+
+    return "\n".join(lines)
+
+
+def _generate_timing_section(timing_info: dict[str, Any]) -> str:
+    """Generate the pipeline performance timing section."""
+    lines = []
+    lines.append("## Pipeline Performance\n")
+
+    stage_timings = timing_info.get("stage_timings", {})
+    dataset_timings = timing_info.get("dataset_timings", {})
+    total_elapsed = timing_info.get("total_elapsed", 0.0)
+
+    if stage_timings:
+        lines.append("### Stage Timings\n")
+        lines.append("| Stage | Duration (s) |")
+        lines.append("|-------|-------------|")
+        for stage_name, elapsed in stage_timings.items():
+            lines.append(f"| {stage_name} | {elapsed:.2f} |")
+        lines.append(f"| **Total** | **{total_elapsed:.2f}** |")
+        lines.append("")
+
+    if dataset_timings:
+        lines.append("### Per-Dataset Processing Time\n")
+        lines.append("| Dataset | Duration (s) |")
+        lines.append("|---------|-------------|")
+        for ds_name, elapsed in dataset_timings.items():
+            lines.append(f"| {ds_name} | {elapsed:.2f} |")
+        lines.append("")
 
     return "\n".join(lines)
 
