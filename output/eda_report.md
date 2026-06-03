@@ -1,6 +1,6 @@
 # EDA Financial Discussions - Analysis Report
 
-*Generated: 2026-06-02 17:28:43*
+*Generated: 2026-06-03 14:46:55*
 
 ## Executive Summary
 
@@ -10,7 +10,7 @@ This report summarizes the exploratory data analysis conducted to identify suita
 
 - **Datasets discovered:** 0 (0 complete with engagement + sentiment fields)
 - **API platforms assessed:** 2
-- **Quality reports generated:** 1 (1 suitable)
+- **Quality reports generated:** 2 (2 suitable)
 - **Surge definitions evaluated:** 9 (6 viable with ≥2% positive class)
 
 ## Dataset Discovery Results
@@ -79,6 +79,39 @@ The following fields require paid access:
 
 ## EDA Statistics
 
+### goyaladi_twitter-dataset.csv
+
+#### Dataset Structure
+
+- **Records:** 10,000
+- **Tickers:** 0
+- **Columns:** 6
+- **Date range:** 2023-01-01 to 2023-05-15
+- **Recommendation:** suitable
+
+#### Missing Values
+
+| Column | Missing % |
+|--------|-----------|
+
+#### Engagement Statistics
+
+| Metric | Mean | Median | P90 | P95 | P99 |
+|--------|------|--------|-----|-----|-----|
+| Retweets | 49.7 | 49.0 | 90.0 | 95.0 | 99.0 |
+| Likes | 49.9 | 50.0 | 90.0 | 95.0 | 100.0 |
+
+#### Sentiment Statistics
+
+- **mean:** 0.443
+- **median:** 0.599
+- **std:** 0.452
+- **Bullish/Bearish ratio:** 4.72
+
+#### Identified Risks
+
+- No ticker column 'ticker' found and ticker extraction from text yielded no results: per-ticker engagement normalization cannot be performed.
+
 ### StockMarket_subreddit.csv
 
 #### Dataset Structure
@@ -135,6 +168,22 @@ Best viable definition: engagement ≥ 90% percentile + sentiment shift ≥ 0.5 
 
 ## Visualizations
 
+### Engagement Distribution Retweets
+
+![Engagement Distribution Retweets](charts/engagement_distribution_Retweets.png)
+
+### Engagement Distribution Likes
+
+![Engagement Distribution Likes](charts/engagement_distribution_Likes.png)
+
+### Sentiment Class Distribution
+
+![Sentiment Class Distribution](charts/sentiment_class_distribution.png)
+
+### Sentiment Polarity Stats
+
+![Sentiment Polarity Stats](charts/sentiment_polarity_stats.png)
+
 ### Engagement Distribution Score
 
 ![Engagement Distribution Score](charts/engagement_distribution_score.png)
@@ -161,19 +210,20 @@ Best viable definition: engagement ≥ 90% percentile + sentiment shift ≥ 0.5 
 
 | Stage | Duration (s) |
 |-------|-------------|
-| Dataset Discovery | 90.93 |
+| Dataset Discovery | 18.35 |
 | API Feasibility | 0.00 |
-| Dataset Preparation | 5.95 |
-| Dataset Quality | 24.55 |
-| Surge Analysis | 15.26 |
-| Visualization | 5.14 |
-| **Total** | **141.84** |
+| Dataset Preparation | 9.43 |
+| Dataset Quality | 40.33 |
+| Surge Analysis | 20.96 |
+| Visualization | 6.26 |
+| **Total** | **95.33** |
 
 ### Per-Dataset Processing Time
 
 | Dataset | Duration (s) |
 |---------|-------------|
-| StockMarket_subreddit.csv | 24.55 |
+| goyaladi_twitter-dataset.csv | 14.57 |
+| StockMarket_subreddit.csv | 25.75 |
 
 ## Final Recommendation
 
@@ -215,7 +265,23 @@ Recommend API collection via 'reddit API' as the best data path. Key strengths: 
    | Ticker Diversity | 1.00 | 15% | Excellent - 50+ tickers covered |
    | Risk | 0.85 | 20% | Minor risks (1-2 issues) |
 
-3. **twitter API** (overall score: 0.770)
+3. **goyaladi_twitter-dataset.csv** (overall score: 0.810)
+   - High data completeness with few missing values
+   - Large dataset suitable for model training
+   - Good temporal coverage with minimal gaps
+   - 1 risk(s) identified: No ticker column 'ticker' found and ticker extraction from text yielded no results: per-ticker engagement normalization cannot be performed.
+
+   **Scoring Breakdown:**
+
+   | Criterion | Score | Weight | Comment |
+   |-----------|-------|--------|---------|
+   | Completeness | 1.00 | 25% | Excellent - very few missing values |
+   | Volume | 0.80 | 20% | Good - 10k-100k records |
+   | Temporal Coverage | 1.00 | 20% | No temporal gaps detected |
+   | Ticker Diversity | 0.20 | 15% | Very limited - fewer than 3 tickers |
+   | Risk | 0.85 | 20% | Minor risks (1-2 issues) |
+
+4. **twitter API** (overall score: 0.770)
    - Fast collection time
    - Supports surge label construction
    - No historical data access - requires prospective collection

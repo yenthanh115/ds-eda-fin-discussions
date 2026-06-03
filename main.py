@@ -331,16 +331,31 @@ def _run_surge_stage(config: PipelineConfig, result: PipelineResult, store: Data
                 if not ds.engagement_cols or not ds.sentiment_col or not ds.date_col or not ds.ticker_col:
                     missing_parts = []
                     if not ds.engagement_cols:
-                        missing_parts.append("engagement")
+                        missing_parts.append(
+                            "engagement (need one of: likes, retweets, comments, "
+                            "upvotes, shares, favorites, score, num_comments, "
+                            "comment_count, like_count, retweet_count, ups, downs)"
+                        )
                     if not ds.sentiment_col:
-                        missing_parts.append("sentiment")
+                        missing_parts.append(
+                            "sentiment (need one of: sentiment, polarity, "
+                            "sentiment_score, compound, bullish, bearish)"
+                        )
                     if not ds.date_col:
-                        missing_parts.append("timestamp")
+                        missing_parts.append(
+                            "timestamp (need one of: date, timestamp, created_at, "
+                            "created_utc, time, posted_at)"
+                        )
                     if not ds.ticker_col:
-                        missing_parts.append("ticker")
+                        missing_parts.append(
+                            "ticker (need one of: ticker, symbol, stock, "
+                            "stock_symbol)"
+                        )
+                    available_cols = ", ".join(ds.df.columns.tolist())
                     msg = (f"  Skipping {ds.name}: "
-                           f"missing required columns for surge analysis "
-                           f"({', '.join(missing_parts)})")
+                           f"missing required columns for surge analysis.\n"
+                           f"    Missing: {'; '.join(missing_parts)}\n"
+                           f"    Available columns: {available_cols}")
                     print(msg)
                     result.errors.append(msg)
                     continue
