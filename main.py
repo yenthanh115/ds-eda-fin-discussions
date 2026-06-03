@@ -559,7 +559,8 @@ def _load_and_enrich_datasets(config: PipelineConfig) -> DatasetStore:
     for filepath in dataset_files:
         try:
             df = _load_dataset(filepath)
-            name = os.path.basename(filepath)
+            # Use the relative path as the name (e.g. data/folder1/folder2/filename.csv)
+            name = filepath.replace("\\", "/")
 
             # Detect columns
             date_col = _detect_date_column(df)

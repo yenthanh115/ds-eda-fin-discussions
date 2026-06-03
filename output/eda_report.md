@@ -1,6 +1,6 @@
 # EDA Financial Discussions - Analysis Report
 
-*Generated: 2026-06-03 14:46:55*
+*Generated: 2026-06-03 16:13:10*
 
 ## Executive Summary
 
@@ -10,8 +10,8 @@ This report summarizes the exploratory data analysis conducted to identify suita
 
 - **Datasets discovered:** 0 (0 complete with engagement + sentiment fields)
 - **API platforms assessed:** 2
-- **Quality reports generated:** 2 (2 suitable)
-- **Surge definitions evaluated:** 9 (6 viable with ≥2% positive class)
+- **Quality reports generated:** 3 (3 suitable)
+- **Surge definitions evaluated:** 18 (11 viable with ≥2% positive class)
 
 ## Dataset Discovery Results
 
@@ -79,40 +79,7 @@ The following fields require paid access:
 
 ## EDA Statistics
 
-### goyaladi_twitter-dataset.csv
-
-#### Dataset Structure
-
-- **Records:** 10,000
-- **Tickers:** 0
-- **Columns:** 6
-- **Date range:** 2023-01-01 to 2023-05-15
-- **Recommendation:** suitable
-
-#### Missing Values
-
-| Column | Missing % |
-|--------|-----------|
-
-#### Engagement Statistics
-
-| Metric | Mean | Median | P90 | P95 | P99 |
-|--------|------|--------|-----|-----|-----|
-| Retweets | 49.7 | 49.0 | 90.0 | 95.0 | 99.0 |
-| Likes | 49.9 | 50.0 | 90.0 | 95.0 | 100.0 |
-
-#### Sentiment Statistics
-
-- **mean:** 0.443
-- **median:** 0.599
-- **std:** 0.452
-- **Bullish/Bearish ratio:** 4.72
-
-#### Identified Risks
-
-- No ticker column 'ticker' found and ticker extraction from text yielded no results: per-ticker engagement normalization cannot be performed.
-
-### StockMarket_subreddit.csv
+### ./data/StockMarket_subreddit.csv
 
 #### Dataset Structure
 
@@ -146,6 +113,76 @@ The following fields require paid access:
 
 - Duplicate rows detected: 1103 duplicates (1.5%), which may inflate engagement statistics.
 
+### ./data/goyaladi_twitter-dataset/goyaladi_twitter-dataset.csv
+
+#### Dataset Structure
+
+- **Records:** 10,000
+- **Tickers:** 0
+- **Columns:** 6
+- **Date range:** 2023-01-01 to 2023-05-15
+- **Recommendation:** suitable
+
+#### Missing Values
+
+| Column | Missing % |
+|--------|-----------|
+
+#### Engagement Statistics
+
+| Metric | Mean | Median | P90 | P95 | P99 |
+|--------|------|--------|-----|-----|-----|
+| Retweets | 49.7 | 49.0 | 90.0 | 95.0 | 99.0 |
+| Likes | 49.9 | 50.0 | 90.0 | 95.0 | 100.0 |
+
+#### Sentiment Statistics
+
+- **mean:** 0.443
+- **median:** 0.599
+- **std:** 0.452
+- **Bullish/Bearish ratio:** 4.72
+
+#### Identified Risks
+
+- No ticker column 'ticker' found and ticker extraction from text yielded no results: per-ticker engagement normalization cannot be performed.
+
+### ./data/leukipp_reddit-finance-data/gme/submissions_reddit.csv
+
+#### Dataset Structure
+
+- **Records:** 273,327
+- **Tickers:** 340
+- **Columns:** 25
+- **Date range:** 2021-01-01 to 2021-12-31
+- **Recommendation:** suitable
+
+#### Missing Values
+
+**High-risk columns (>30% missing):** selftext
+
+| Column | Missing % |
+|--------|-----------|
+| selftext | 48.7% ⚠️ |
+| link_flair_text | 7.0% |
+
+#### Engagement Statistics
+
+| Metric | Mean | Median | P90 | P95 | P99 |
+|--------|------|--------|-----|-----|-----|
+| score | 101.3 | 10.0 | 142.0 | 407.0 | 1868.7 |
+| num_comments | 12.5 | 3.0 | 21.0 | 37.0 | 146.0 |
+
+#### Sentiment Statistics
+
+- **mean:** 0.083
+- **median:** 0.000
+- **std:** 0.361
+- **Bullish/Bearish ratio:** 1.82
+
+#### Identified Risks
+
+- High missing data: columns ['selftext'] have >30% missing values, which may bias analysis or require imputation.
+
 ## Surge Analysis Results
 
 Surge definitions were evaluated across multiple threshold combinations.
@@ -161,12 +198,37 @@ Surge definitions were evaluated across multiple threshold combinations.
 | 0.99 | 0.5 | 24 | 1,505 | 72,620 | 2.07% | 47.3:1 | ✓ |
 | 0.99 | 1.0 | 24 | 794 | 72,620 | 1.09% | 90.5:1 | ✗ |
 | 0.99 | 1.5 | 24 | 418 | 72,620 | 0.58% | 172.7:1 | ✗ |
+| 0.90 | 0.5 | 24 | 20,350 | 273,327 | 7.45% | 12.4:1 | ✓ |
+| 0.90 | 1.0 | 24 | 14,104 | 273,327 | 5.16% | 18.4:1 | ✓ |
+| 0.90 | 1.5 | 24 | 8,176 | 273,327 | 2.99% | 32.4:1 | ✓ |
+| 0.95 | 0.5 | 24 | 10,219 | 273,327 | 3.74% | 25.7:1 | ✓ |
+| 0.95 | 1.0 | 24 | 7,146 | 273,327 | 2.61% | 37.2:1 | ✓ |
+| 0.95 | 1.5 | 24 | 4,187 | 273,327 | 1.53% | 64.3:1 | ✗ |
+| 0.99 | 0.5 | 24 | 2,126 | 273,327 | 0.78% | 127.6:1 | ✗ |
+| 0.99 | 1.0 | 24 | 1,558 | 273,327 | 0.57% | 174.4:1 | ✗ |
+| 0.99 | 1.5 | 24 | 968 | 273,327 | 0.35% | 281.4:1 | ✗ |
 
-**6 viable surge definition(s)** found (positive class ≥ 2%).
+**11 viable surge definition(s)** found (positive class ≥ 2%).
 
 Best viable definition: engagement ≥ 90% percentile + sentiment shift ≥ 0.5 std devs → 8.50% surge rate.
 
 ## Visualizations
+
+### Engagement Distribution Score
+
+![Engagement Distribution Score](charts/engagement_distribution_score.png)
+
+### Engagement Distribution Num Comments
+
+![Engagement Distribution Num Comments](charts/engagement_distribution_num_comments.png)
+
+### Sentiment Class Distribution
+
+![Sentiment Class Distribution](charts/sentiment_class_distribution.png)
+
+### Sentiment Polarity Stats
+
+![Sentiment Polarity Stats](charts/sentiment_polarity_stats.png)
 
 ### Engagement Distribution Retweets
 
@@ -210,26 +272,27 @@ Best viable definition: engagement ≥ 90% percentile + sentiment shift ≥ 0.5 
 
 | Stage | Duration (s) |
 |-------|-------------|
-| Dataset Discovery | 18.35 |
+| Dataset Discovery | 38.71 |
 | API Feasibility | 0.00 |
-| Dataset Preparation | 9.43 |
-| Dataset Quality | 40.33 |
-| Surge Analysis | 20.96 |
-| Visualization | 6.26 |
-| **Total** | **95.33** |
+| Dataset Preparation | 40.22 |
+| Dataset Quality | 142.58 |
+| Surge Analysis | 42.34 |
+| Visualization | 5.68 |
+| **Total** | **269.54** |
 
 ### Per-Dataset Processing Time
 
 | Dataset | Duration (s) |
 |---------|-------------|
-| goyaladi_twitter-dataset.csv | 14.57 |
-| StockMarket_subreddit.csv | 25.75 |
+| ./data/StockMarket_subreddit.csv | 24.12 |
+| ./data/goyaladi_twitter-dataset/goyaladi_twitter-dataset.csv | 8.43 |
+| ./data/leukipp_reddit-finance-data/gme/submissions_reddit.csv | 110.03 |
 
 ## Final Recommendation
 
 ### Recommended Path: API Collection (reddit API)
 
-Recommend API collection via 'reddit API' as the best data path. Key strengths: reasonable cost, supports surge label construction, historical data access available. API collection provides fresh, customizable data tailored to the prediction task. Surge analysis confirms viable definitions exist (6/9 configurations produce ≥2% positive class).
+Recommend API collection via 'reddit API' as the best data path. Key strengths: reasonable cost, supports surge label construction, historical data access available. API collection provides fresh, customizable data tailored to the prediction task. Surge analysis confirms viable definitions exist (11/18 configurations produce ≥2% positive class).
 
 ### Ranked Options
 
@@ -249,7 +312,23 @@ Recommend API collection via 'reddit API' as the best data path. Key strengths: 
    | Historical Access | 1.00 | 15% | Historical data access available |
    | Field Availability | 1.00 | 15% | Rich field set (10+ fields) |
 
-2. **StockMarket_subreddit.csv** (overall score: 0.930)
+2. **./data/leukipp_reddit-finance-data/gme/submissions_reddit.csv** (overall score: 0.960)
+   - High data completeness with few missing values
+   - Large dataset suitable for model training
+   - Good temporal coverage with minimal gaps
+   - 1 risk(s) identified: High missing data: columns ['selftext'] have >30% missing values, which may bias analysis or require imputation.
+
+   **Scoring Breakdown:**
+
+   | Criterion | Score | Weight | Comment |
+   |-----------|-------|--------|---------|
+   | Completeness | 0.96 | 25% | Excellent - very few missing values |
+   | Volume | 1.00 | 20% | Excellent - 100k+ records |
+   | Temporal Coverage | 1.00 | 20% | No temporal gaps detected |
+   | Ticker Diversity | 1.00 | 15% | Excellent - 50+ tickers covered |
+   | Risk | 0.85 | 20% | Minor risks (1-2 issues) |
+
+3. **./data/StockMarket_subreddit.csv** (overall score: 0.930)
    - High data completeness with few missing values
    - Large dataset suitable for model training
    - Good temporal coverage with minimal gaps
@@ -265,7 +344,7 @@ Recommend API collection via 'reddit API' as the best data path. Key strengths: 
    | Ticker Diversity | 1.00 | 15% | Excellent - 50+ tickers covered |
    | Risk | 0.85 | 20% | Minor risks (1-2 issues) |
 
-3. **goyaladi_twitter-dataset.csv** (overall score: 0.810)
+4. **./data/goyaladi_twitter-dataset/goyaladi_twitter-dataset.csv** (overall score: 0.810)
    - High data completeness with few missing values
    - Large dataset suitable for model training
    - Good temporal coverage with minimal gaps
@@ -281,7 +360,7 @@ Recommend API collection via 'reddit API' as the best data path. Key strengths: 
    | Ticker Diversity | 0.20 | 15% | Very limited - fewer than 3 tickers |
    | Risk | 0.85 | 20% | Minor risks (1-2 issues) |
 
-4. **twitter API** (overall score: 0.770)
+5. **twitter API** (overall score: 0.770)
    - Fast collection time
    - Supports surge label construction
    - No historical data access - requires prospective collection
