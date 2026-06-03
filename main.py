@@ -328,6 +328,7 @@ def _run_surge_stage(config: PipelineConfig, result: PipelineResult, store: Data
                 print(f"  Analyzing surges in: {ds.name}")
                 surge_ds_start = time.perf_counter()
 
+                # check if missing required columns for surge analysis
                 if not ds.engagement_cols or not ds.sentiment_col or not ds.date_col or not ds.ticker_col:
                     missing_parts = []
                     if not ds.engagement_cols:
@@ -637,10 +638,10 @@ def _load_dataset(filepath: str) -> pd.DataFrame:
 
 
 def _find_dataset_files(config: PipelineConfig) -> list[str]:
-    """Find CSV dataset files in common locations.
+    """Find CSV dataset files in common locations, including subfolders.
 
-    Searches the project root, output directory, and a 'data/' directory
-    for CSV files that could be candidate datasets.
+    Recursively searches the project root, output directory, and 'data/'
+    and 'datasets/' directories for CSV files that could be candidate datasets.
 
     Returns:
         List of file paths to CSV files found.
@@ -658,13 +659,14 @@ def _find_dataset_files(config: PipelineConfig) -> list[str]:
     for directory in search_dirs:
         if not os.path.isdir(directory):
             continue
-        for filename in os.listdir(directory):
-            if filename.lower().endswith(".csv"):
-                filepath = os.path.join(directory, filename)
-                abs_path = os.path.abspath(filepath)
-                if abs_path not in seen:
-                    seen.add(abs_path)
-                    csv_files.append(filepath)
+        for dirpath, _dirnames, filenames in os.walk(directory):
+            for filename in filenames:
+                if filename.lower().endswith(".csv"):
+                    filepath = os.path.join(dirpath, filename)
+                    abs_path = os.path.abspath(filepath)
+                    if abs_path not in seen:
+                        seen.add(abs_path)
+                        csv_files.append(filepath)
 
     return csv_files
 
