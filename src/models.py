@@ -142,16 +142,26 @@ class PipelineConfig:
         "stock twitter sentiment",
         "stock reddit discussion",
         "financial social media engagement",
+        "reddit finance data",
+        "twitter finance data",
     ])
     huggingface_search_terms: list[str] = field(default_factory=lambda: [
         "stock sentiment",
         "financial tweets",
-        "reddit wallstreetbets",
+        "reddit finance data",
+        "twitter finance data",
     ])
     surge_percentiles: list[float] = field(default_factory=lambda: [0.90, 0.95, 0.99])
     surge_std_devs: list[float] = field(default_factory=lambda: [0.5, 1.0, 1.5])
     surge_window_hours: int = 24
     min_positive_class_pct: float = 0.02  # 2% threshold
+
+    # Dataset discovery filtering options
+    filter_require_complete: bool = False  # Only keep datasets with engagement + sentiment
+    filter_min_downloads: int = 50  # Minimum download count to keep a dataset
+    filter_max_freshness_days: int = -1  # Max days since update (-1 = no limit)
+    filter_min_records: int = 0  # Minimum record count (0 = don't filter on this)
+    filter_top_k: int = 20  # Keep only top-k ranked datasets (0 = keep all)
 
 
 @dataclass

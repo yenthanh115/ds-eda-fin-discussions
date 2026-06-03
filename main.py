@@ -123,6 +123,7 @@ def _run_discovery_stage(config: PipelineConfig, result: PipelineResult) -> Pipe
     """Execute the dataset discovery stage."""
     try:
         from src.dataset_discovery import (
+            filter_datasets,
             flag_incomplete_datasets,
             scan_huggingface,
             scan_kaggle,
@@ -138,6 +139,18 @@ def _run_discovery_stage(config: PipelineConfig, result: PipelineResult) -> Pipe
 
         all_datasets = kaggle_datasets + hf_datasets
         all_datasets = flag_incomplete_datasets(all_datasets)
+
+        # Filter down to relevant, high-quality datasets
+        pre_filter_count = len(all_datasets)
+        all_datasets = filter_datasets(
+            all_datasets,
+            require_complete=config.filter_require_complete,
+            min_download_count=config.filter_min_downloads,
+            max_freshness_days=config.filter_max_freshness_days,
+            min_record_count=config.filter_min_records,
+            top_k=config.filter_top_k,
+        )
+        print(f"  Filtered: {pre_filter_count} → {len(all_datasets)} datasets")
 
         complete_count = sum(1 for d in all_datasets if d.is_complete)
         print(f"  Total: {len(all_datasets)} datasets ({complete_count} complete)")
