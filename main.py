@@ -66,10 +66,13 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
     stage_timings["Dataset Discovery"] = time.perf_counter() - t0
 
     # ─── Stage 2/6: API Feasibility Assessment ──────────────────────────
-    print("Stage 2/6: API Feasibility Assessment...")
-    t0 = time.perf_counter()
-    result = _run_api_feasibility_stage(config, result)
-    stage_timings["API Feasibility"] = time.perf_counter() - t0
+    if config.enable_api_feasibility:
+        print("Stage 2/6: API Feasibility Assessment...")
+        t0 = time.perf_counter()
+        result = _run_api_feasibility_stage(config, result)
+        stage_timings["API Feasibility"] = time.perf_counter() - t0
+    else:
+        print("Stage 2/6: API Feasibility Assessment... SKIPPED (disabled)")
 
     # ─── Dataset Preparation: Load & Enrich Once ────────────────────────
     print("Preparing datasets: Loading & enriching...")

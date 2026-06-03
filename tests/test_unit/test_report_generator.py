@@ -280,13 +280,14 @@ class TestGenerateReport:
         """generate_report handles all empty inputs gracefully."""
         generate_report([], [], [], [], [], output_path)
         content = _read_report(output_path)
-        # All sections should still be present
+        # All always-present sections should still be present
         assert "## Executive Summary" in content
         assert "## Dataset Discovery Results" in content
-        assert "## API Feasibility Findings" in content
         assert "## EDA Statistics" in content
         assert "## Surge Analysis Results" in content
         assert "## Final Recommendation" in content
+        # API Feasibility section is conditional — omitted when no assessments provided
+        assert "## API Feasibility Findings" not in content
 
     def test_creates_output_directory_if_missing(
         self, sample_datasets, sample_apis, sample_quality_reports,

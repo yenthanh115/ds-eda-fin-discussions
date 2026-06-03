@@ -48,7 +48,8 @@ def generate_report(
     sections.append(_generate_discovery_section(discovery_results))
 
     # API Feasibility Findings
-    sections.append(_generate_api_feasibility_section(api_assessments))
+    if api_assessments:
+        sections.append(_generate_api_feasibility_section(api_assessments))
 
     # EDA Statistics
     sections.append(_generate_eda_statistics_section(quality_reports))
@@ -105,7 +106,8 @@ def _generate_executive_summary(
     lines.append("### Key Findings\n")
     lines.append(f"- **Datasets discovered:** {total_datasets} "
                  f"({complete_datasets} complete with engagement + sentiment fields)")
-    lines.append(f"- **API platforms assessed:** {len(api_assessments)}")
+    if api_assessments:
+        lines.append(f"- **API platforms assessed:** {len(api_assessments)}")
     lines.append(f"- **Quality reports generated:** {len(quality_reports)} "
                  f"({suitable_datasets} suitable)")
     lines.append(f"- **Surge definitions evaluated:** {total_surge_defs} "

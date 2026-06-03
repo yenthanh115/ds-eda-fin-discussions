@@ -1,6 +1,6 @@
 # EDA Financial Discussions - Analysis Report
 
-*Generated: 2026-06-04 00:14:39*
+*Generated: 2026-06-04 00:33:09*
 
 ## Executive Summary
 
@@ -9,7 +9,6 @@ This report summarizes the exploratory data analysis conducted to identify suita
 ### Key Findings
 
 - **Datasets discovered:** 20 (0 complete with engagement + sentiment fields)
-- **API platforms assessed:** 2
 - **Quality reports generated:** 1 (1 suitable)
 - **Surge definitions evaluated:** 9 (6 viable with ≥2% positive class)
 
@@ -71,66 +70,6 @@ The following datasets are flagged as incomplete for surge prediction (missing e
 - **mattgilgo/stock-related-tweet-sentiment** (kaggle): missing engagement metrics
 - **mihikaajayjadhav/top-1000-cryptocurrencies-real-time-data-2025** (kaggle): missing engagement metrics, sentiment fields
 - **jonathanpaserman/fed-press-release-text** (kaggle): missing engagement metrics, sentiment fields
-
-## API Feasibility Findings
-
-### Twitter API
-
-- **Historical access:** No
-- **Supports surge label construction:** Yes
-- **Estimated collection time:** 0.4 hours
-- **Estimated cost:** $100.00
-- **Endpoints available:** 5
-
-#### Rate Limits
-
-- free_tier: {'tweets_per_month': 1500, 'requests_per_15min': 15, 'posts_per_request': 100}
-- basic_tier: {'tweets_per_month': 10000, 'requests_per_15min': 60, 'posts_per_request': 100}
-- pro_tier: {'tweets_per_month': 1000000, 'requests_per_15min': 300, 'posts_per_request': 100}
-
-#### Cost Tiers
-
-| Tier | Details |
-|------|---------|
-| Free | cost_usd_monthly: 0, tweet_cap: 1500 |
-| Basic | cost_usd_monthly: 100, tweet_cap: 10000 |
-| Pro | cost_usd_monthly: 5000, tweet_cap: 1000000 |
-| Enterprise | cost_usd_monthly: 42000, tweet_cap: 50000000 |
-
-#### Paid Fields
-
-The following fields require paid access:
-
-- **impression_count**: requires Basic ($100/month)
-- **full archive search**: requires Pro ($5,000/month)
-- **quote_count**: requires Basic ($100/month)
-
-### Reddit API
-
-- **Historical access:** Yes
-- **Supports surge label construction:** Yes
-- **Estimated collection time:** 0.0 hours
-- **Estimated cost:** $0.00
-- **Endpoints available:** 7
-
-#### Rate Limits
-
-- oauth_tier: {'requests_per_minute': 100, 'posts_per_request': 100, 'daily_limit': None}
-- free_tier_note: Reddit API is free for non-commercial use with OAuth. Commercial use requires paid access.
-
-#### Cost Tiers
-
-| Tier | Details |
-|------|---------|
-| Free (non-commercial) | cost_usd_monthly: 0, rate_limit: 100 requests/min, note: Requires OAuth app registration |
-| Commercial | cost_usd_monthly: Contact Reddit, rate_limit: Higher limits available, note: Required for commercial data use since 2023 API changes |
-
-#### Paid Fields
-
-The following fields require paid access:
-
-- **full historical archive**: requires Commercial (contact Reddit)
-- **real-time streaming**: requires Commercial (contact Reddit)
 
 ## EDA Statistics
 
@@ -220,45 +159,28 @@ Best viable definition: engagement ≥ 90% percentile + sentiment shift ≥ 0.5 
 
 | Stage | Duration (s) |
 |-------|-------------|
-| Dataset Discovery | 36.46 |
-| API Feasibility | 0.00 |
-| Dataset Preparation | 3.07 |
-| Dataset Quality | 9.98 |
-| Surge Analysis | 6.74 |
-| Visualization | 2.85 |
-| **Total** | **59.11** |
+| Dataset Discovery | 38.52 |
+| Dataset Preparation | 3.21 |
+| Dataset Quality | 10.35 |
+| Surge Analysis | 6.88 |
+| Visualization | 2.48 |
+| **Total** | **61.44** |
 
 ### Per-Dataset Processing Time
 
 | Dataset | Duration (s) |
 |---------|-------------|
-| ./data/StockMarket_subreddit.csv | 9.96 |
+| ./data/StockMarket_subreddit.csv | 10.35 |
 
 ## Final Recommendation
 
-### Recommended Path: API Collection (reddit API)
+### Recommended Path: Public Dataset (./data/StockMarket_subreddit.csv)
 
-Recommend API collection via 'reddit API' as the best data path. Key strengths: reasonable cost, supports surge label construction, historical data access available. API collection provides fresh, customizable data tailored to the prediction task. Surge analysis confirms viable definitions exist (6/9 configurations produce ≥2% positive class).
+Recommend public dataset './data/StockMarket_subreddit.csv' as the best data path. Key strengths: good data completeness, sufficient record volume, adequate temporal coverage. Public datasets offer immediate availability without collection delays or API costs. Surge analysis confirms viable definitions exist (6/9 configurations produce ≥2% positive class).
 
 ### Ranked Options
 
-1. **reddit API** (overall score: 1.000)
-   - Low cost for data collection
-   - Fast collection time
-   - Supports surge label construction
-   - Some fields require paid access: full historical archive, real-time streaming
-
-   **Scoring Breakdown:**
-
-   | Criterion | Score | Weight | Comment |
-   |-----------|-------|--------|---------|
-   | Cost | 1.00 | 25% | Free access |
-   | Collection Time | 1.00 | 20% | Very fast (≤1 hour) |
-   | Feasibility | 1.00 | 25% | Supports surge label construction |
-   | Historical Access | 1.00 | 15% | Historical data access available |
-   | Field Availability | 1.00 | 15% | Rich field set (10+ fields) |
-
-2. **./data/StockMarket_subreddit.csv** (overall score: 0.930)
+1. **./data/StockMarket_subreddit.csv** (overall score: 0.930)
    - High data completeness with few missing values
    - Large dataset suitable for model training
    - Good temporal coverage with minimal gaps
@@ -273,20 +195,4 @@ Recommend API collection via 'reddit API' as the best data path. Key strengths: 
    | Temporal Coverage | 1.00 | 20% | No temporal gaps detected |
    | Ticker Diversity | 1.00 | 15% | Excellent - 50+ tickers covered |
    | Risk | 0.85 | 20% | Minor risks (1-2 issues) |
-
-3. **twitter API** (overall score: 0.770)
-   - Fast collection time
-   - Supports surge label construction
-   - No historical data access - requires prospective collection
-   - Some fields require paid access: impression_count, full archive search, quote_count
-
-   **Scoring Breakdown:**
-
-   | Criterion | Score | Weight | Comment |
-   |-----------|-------|--------|---------|
-   | Cost | 0.50 | 25% | Moderate cost ($50-$200) |
-   | Collection Time | 1.00 | 20% | Very fast (≤1 hour) |
-   | Feasibility | 1.00 | 25% | Supports surge label construction |
-   | Historical Access | 0.30 | 15% | No historical access - prospective only |
-   | Field Availability | 1.00 | 15% | Rich field set (10+ fields) |
 

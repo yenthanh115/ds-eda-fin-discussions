@@ -163,6 +163,9 @@ class PipelineConfig:
     filter_min_records: int = 0  # Minimum record count (0 = don't filter on this)
     filter_top_k: int = 20  # Keep only top-k ranked datasets (0 = keep all)
 
+    # Stage toggles
+    enable_api_feasibility: bool = False  # Disabled due to platform API restrictions
+
 
 @dataclass
 class PipelineResult:
