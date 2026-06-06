@@ -138,11 +138,12 @@ class PipelineConfig:
 
     output_dir: str = "output"
     chart_format: str = "png"
+    phase: str = "all"  # "discovery" | "analysis" | "all"
     kaggle_search_terms: list[str] = field(default_factory=lambda: [
+        "reddit finance data",
         "stock twitter sentiment",
         "stock reddit discussion",
         "financial social media engagement",
-        "reddit finance data",
         "twitter finance data",
     ])
     huggingface_search_terms: list[str] = field(default_factory=lambda: [
@@ -165,6 +166,20 @@ class PipelineConfig:
 
     # Stage toggles
     enable_api_feasibility: bool = False  # Disabled due to platform API restrictions
+
+
+@dataclass
+class DiscoveryReportData:
+    """Structured output from Phase 1 (Dataset Discovery).
+
+    Serialized to JSON as the standalone discovery report artifact.
+    """
+
+    datasets: list["DatasetMetadata"] = field(default_factory=list)
+    api_assessments: list["APIAssessment"] = field(default_factory=list)
+    search_config: dict = field(default_factory=dict)  # search terms and filter settings
+    execution_timestamp: str = ""  # ISO 8601
+    summary: dict = field(default_factory=dict)  # {total, complete, incomplete, filtered_out}
 
 
 @dataclass

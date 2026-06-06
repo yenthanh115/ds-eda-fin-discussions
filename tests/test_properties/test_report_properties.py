@@ -134,7 +134,7 @@ _chart_path_strategy = st.lists(
 # Required sections that must appear in every report
 REQUIRED_SECTIONS = [
     "## Executive Summary",
-    "## Dataset Discovery Results",
+    "## Dataset Discovery Summary",
     "## EDA Statistics",
     "## Surge Analysis Results",
     "## Final Recommendation",
@@ -208,12 +208,6 @@ class TestReportSectionCompleteness:
             for section in REQUIRED_SECTIONS:
                 assert section in report_content, (
                     f"Required section '{section}' not found in report"
-                )
-
-            # Verify conditional sections appear when their data is provided
-            if api_assessments:
-                assert "## API Feasibility Findings" in report_content, (
-                    "API Feasibility section missing when api_assessments provided"
                 )
 
     @given(

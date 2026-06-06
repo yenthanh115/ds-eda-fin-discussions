@@ -15,12 +15,13 @@ def generate_report(
     chart_paths: list[str],
     output_path: str,
     timing_info: dict[str, Any] | None = None,
+    discovery_report_path: str | None = None,
 ) -> str:
     """Generate comprehensive markdown report. Returns file path.
 
     Args:
-        discovery_results: List of discovered dataset metadata.
-        api_assessments: List of API feasibility assessments.
+        discovery_results: List of discovered dataset metadata (for summary counts).
+        api_assessments: List of API feasibility assessments (for recommendation).
         quality_reports: List of dataset quality analysis reports.
         surge_results: List of surge definition evaluation results.
         chart_paths: List of paths to generated chart files.
@@ -29,6 +30,7 @@ def generate_report(
             - stage_timings: dict mapping stage name to elapsed seconds
             - dataset_timings: dict mapping dataset name to elapsed seconds
             - total_elapsed: total pipeline duration in seconds
+        discovery_report_path: Optional path to discovery_report.md for cross-reference.
 
     Returns:
         The file path of the generated report.
@@ -44,12 +46,8 @@ def generate_report(
         discovery_results, api_assessments, quality_reports, surge_results
     ))
 
-    # Dataset Discovery Results
-    sections.append(_generate_discovery_section(discovery_results))
-
-    # API Feasibility Findings
-    if api_assessments:
-        sections.append(_generate_api_feasibility_section(api_assessments))
+    # Discovery Reference (link to standalone discovery report, not full tables)
+    sections.append(_generate_discovery_reference(discovery_results, discovery_report_path, output_path))
 
     # EDA Statistics
     sections.append(_generate_eda_statistics_section(quality_reports))
@@ -114,6 +112,45 @@ def _generate_executive_summary(
                  f"({viable_surges} viable with ≥2% positive class)")
     lines.append("")
 
+    return "\n".join(lines)
+
+
+def _generate_discovery_reference(
+    discovery_results: list[DatasetMetadata],
+    discovery_report_path: str | None,
+    output_path: str,
+) -> str:
+    """Generate a brief discovery reference section (not full tables).
+
+    Instead of duplicating discovery details, this section provides summary
+    counts and a link to the standalone discovery_report.md.
+    """
+    lines = []
+    lines.append("## Dataset Discovery Summary\n")
+
+    total = len(discovery_results)
+    complete = sum(1 for d in discovery_results if d.is_complete)
+
+    if total > 0:
+        platforms = set(d.source_platform for d in discovery_results)
+        lines.append(f"- **Datasets discovered:** {total} across {len(platforms)} platform(s)")
+        lines.append(f"- **Complete (engagement + sentiment):** {complete}")
+        lines.append(f"- **Incomplete:** {total - complete}")
+    else:
+        lines.append("No dataset discovery results available.")
+
+    if discovery_report_path:
+        # Compute relative path from the report to the discovery report
+        report_dir = os.path.dirname(os.path.abspath(output_path))
+        abs_discovery = os.path.abspath(discovery_report_path)
+        try:
+            rel_path = os.path.relpath(abs_discovery, report_dir)
+        except ValueError:
+            rel_path = discovery_report_path
+        rel_path = rel_path.replace("\\", "/")
+        lines.append(f"\n> For full discovery details, see [{rel_path}]({rel_path})")
+
+    lines.append("")
     return "\n".join(lines)
 
 

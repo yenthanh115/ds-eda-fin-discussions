@@ -182,19 +182,20 @@ class TestGenerateReport:
             sample_surge_results, sample_chart_paths, output_path
         )
         content = _read_report(output_path)
-        assert "## Dataset Discovery Results" in content
+        assert "## Dataset Discovery Summary" in content
 
     def test_report_contains_api_feasibility(
         self, sample_datasets, sample_apis, sample_quality_reports,
         sample_surge_results, sample_chart_paths, output_path
     ):
-        """Report contains API feasibility findings."""
+        """Report contains discovery summary (API details now in discovery report)."""
         generate_report(
             sample_datasets, sample_apis, sample_quality_reports,
             sample_surge_results, sample_chart_paths, output_path
         )
         content = _read_report(output_path)
-        assert "## API Feasibility Findings" in content
+        # API feasibility details are now in discovery_report.md, not here
+        assert "## Dataset Discovery Summary" in content
 
     def test_report_contains_eda_statistics(
         self, sample_datasets, sample_apis, sample_quality_reports,
@@ -282,12 +283,10 @@ class TestGenerateReport:
         content = _read_report(output_path)
         # All always-present sections should still be present
         assert "## Executive Summary" in content
-        assert "## Dataset Discovery Results" in content
+        assert "## Dataset Discovery Summary" in content
         assert "## EDA Statistics" in content
         assert "## Surge Analysis Results" in content
         assert "## Final Recommendation" in content
-        # API Feasibility section is conditional — omitted when no assessments provided
-        assert "## API Feasibility Findings" not in content
 
     def test_creates_output_directory_if_missing(
         self, sample_datasets, sample_apis, sample_quality_reports,
