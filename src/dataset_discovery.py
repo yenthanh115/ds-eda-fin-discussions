@@ -409,3 +409,91 @@ def flag_incomplete_datasets(
         dataset.is_complete = has_engagement and has_sentiment
 
     return datasets
+
+
+def filter_datasets(
+    datasets: list[DatasetMetadata],
+    *,
+    require_complete: bool = False,
+    min_download_count: int = 0,
+    max_freshness_days: int = -1,
+    min_record_count: int = 0,
+    top_k: int = 0,
+) -> list[DatasetMetadata]:
+    """Filter and rank discovered datasets to reduce noise.
+
+    Applies configurable criteria to remove low-quality or irrelevant datasets,
+    then optionally ranks the remainder by a relevance score and returns only
+    the top-k results.
+
+    Filtering criteria (applied in order):
+    - require_complete: Keep only datasets with both engagement + sentiment fields.
+    - min_download_count: Keep only datasets with at least this many downloads.
+    - max_freshness_days: Keep only datasets updated within this many days (ignored if <= 0).
+    - min_record_count: Keep only datasets with at least this many records (ignored if 0
+      since record_count is often unknown/0 from API metadata).
+
+    Ranking (when top_k > 0):
+    Datasets are scored by a weighted combination of:
+    - Completeness (has both engagement + sentiment): +50 points
+    - Has engagement OR sentiment: +20 points
+    - Download popularity: log10(download_count + 1) * 10
+    - Freshness: higher score for more recently updated datasets
+    - Record count known: +10 bonus if record_count > 0
+
+    Args:
+        datasets: List of DatasetMetadata objects to filter.
+        require_complete: If True, only keep datasets where is_complete=True.
+        min_download_count: Minimum download count threshold.
+        max_freshness_days: Maximum days since last update (<=0 means no limit).
+        min_record_count: Minimum record count (0 means don't filter on this).
+        top_k: If > 0, return only the top_k highest-scored datasets.
+
+    Returns:
+        Filtered (and optionally ranked/truncated) list of DatasetMetadata.
+    """
+    import math
+
+    filtered = list(datasets)
+
+    # Apply hard filters
+    if require_complete:
+        filtered = [d for d in filtered if d.is_complete]
+
+    if min_download_count > 0:
+        filtered = [d for d in filtered if d.download_count >= min_download_count]
+
+    if max_freshness_days > 0:
+        filtered = [
+            d for d in filtered
+            if d.freshness_days >= 0 and d.freshness_days <= max_freshness_days
+        ]
+
+    if min_record_count > 0:
+        filtered = [d for d in filtered if d.record_count >= min_record_count]
+
+    # Rank by relevance score if top_k is requested
+    if top_k > 0 and len(filtered) > top_k:
+        def _score(d: DatasetMetadata) -> float:
+            score = 0.0
+            # Completeness bonus
+            if d.is_complete:
+                score += 50.0
+            elif d.has_engagement_metrics or d.has_sentiment_fields:
+                score += 20.0
+            # Download popularity (log scale)
+            score += math.log10(d.download_count + 1) * 10.0
+            # Freshness bonus (more recent = higher score, max 20 points)
+            if d.freshness_days >= 0:
+                # Cap at 730 days (2 years); anything older gets 0 freshness bonus
+                capped_days = min(d.freshness_days, 730)
+                score += 20.0 * (1.0 - capped_days / 730.0)
+            # Record count bonus
+            if d.record_count > 0:
+                score += 10.0
+            return score
+
+        filtered.sort(key=_score, reverse=True)
+        filtered = filtered[:top_k]
+
+    return filtered

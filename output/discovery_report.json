@@ -1,0 +1,334 @@
+{
+  "datasets": [
+    {
+      "name": "yash612/stockmarket-sentiment-dataset",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 13855,
+      "date_range": [
+        "unknown",
+        "2020-06-05"
+      ],
+      "columns": [],
+      "freshness_days": 2191,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "thedevastator/tweet-sentiment-s-impact-on-stock-returns",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 2295,
+      "date_range": [
+        "unknown",
+        "2023-01-16"
+      ],
+      "columns": [],
+      "freshness_days": 1236,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "gautamchettiar/bitcoin-sentiment-analysis-twitter-data",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 1668,
+      "date_range": [
+        "unknown",
+        "2022-11-07"
+      ],
+      "columns": [],
+      "freshness_days": 1306,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "ryanchan911/selective-stock-headlines-sentiment",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 1302,
+      "date_range": [
+        "unknown",
+        "2020-01-19"
+      ],
+      "columns": [],
+      "freshness_days": 2329,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "sidarcidiacono/news-sentiment-analysis-for-stock-data-by-company",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 1142,
+      "date_range": [
+        "unknown",
+        "2021-03-17"
+      ],
+      "columns": [],
+      "freshness_days": 1906,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "aiexplorer77/academic-performance-prediction",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 1286,
+      "date_range": [
+        "unknown",
+        "2026-05-07"
+      ],
+      "columns": [],
+      "freshness_days": 29,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": false,
+      "is_complete": false
+    },
+    {
+      "name": "rootpi3/stock-price-prediction-with-sentiment-analysis",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 315,
+      "date_range": [
+        "unknown",
+        "2024-12-15"
+      ],
+      "columns": [],
+      "freshness_days": 537,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "kemical/kickstarter-projects",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 98199,
+      "date_range": [
+        "unknown",
+        "2018-02-08"
+      ],
+      "columns": [],
+      "freshness_days": 3039,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": false,
+      "is_complete": false
+    },
+    {
+      "name": "mattpodolak/reddit-wallstreetbets-comments",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 935,
+      "date_range": [
+        "unknown",
+        "2021-02-24"
+      ],
+      "columns": [],
+      "freshness_days": 1928,
+      "has_engagement_metrics": true,
+      "has_sentiment_fields": false,
+      "is_complete": false
+    },
+    {
+      "name": "thedevastator/sentiment-analysis-of-us-airline-twitter-data",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 899,
+      "date_range": [
+        "unknown",
+        "2022-11-18"
+      ],
+      "columns": [],
+      "freshness_days": 1295,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "nitikachandel95/student-social-media-impact-dataset",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 1366,
+      "date_range": [
+        "unknown",
+        "2026-03-19"
+      ],
+      "columns": [],
+      "freshness_days": 78,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": false,
+      "is_complete": false
+    },
+    {
+      "name": "nadun94/twitter-sentiments-aapl-stock",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 765,
+      "date_range": [
+        "unknown",
+        "2019-09-22"
+      ],
+      "columns": [],
+      "freshness_days": 2448,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "kirolosatef/netflex-stock-dataset-with-twitter-sentiment",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 684,
+      "date_range": [
+        "unknown",
+        "2023-09-18"
+      ],
+      "columns": [],
+      "freshness_days": 992,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "aaron7sun/stocknews",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 64147,
+      "date_range": [
+        "unknown",
+        "2019-11-13"
+      ],
+      "columns": [],
+      "freshness_days": 2396,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": false,
+      "is_complete": false
+    },
+    {
+      "name": "TimKoornstra/financial-tweets-sentiment",
+      "source_platform": "huggingface",
+      "record_count": 0,
+      "download_count": 549,
+      "date_range": [
+        "unknown",
+        "2023-12-20"
+      ],
+      "columns": [],
+      "freshness_days": 898,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "dominikgulacsy/twitter-investor-sentiment-analysis-dataset",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 470,
+      "date_range": [
+        "unknown",
+        "2019-10-18"
+      ],
+      "columns": [],
+      "freshness_days": 2422,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "ibrahimshahrukh/european-housing-price-index-dataset",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 818,
+      "date_range": [
+        "unknown",
+        "2026-01-29"
+      ],
+      "columns": [],
+      "freshness_days": 128,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": false,
+      "is_complete": false
+    },
+    {
+      "name": "mattgilgo/stock-related-tweet-sentiment",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 258,
+      "date_range": [
+        "unknown",
+        "2021-04-22"
+      ],
+      "columns": [],
+      "freshness_days": 1870,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": true,
+      "is_complete": false
+    },
+    {
+      "name": "mihikaajayjadhav/top-1000-cryptocurrencies-real-time-data-2025",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 730,
+      "date_range": [
+        "unknown",
+        "2025-12-03"
+      ],
+      "columns": [],
+      "freshness_days": 184,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": false,
+      "is_complete": false
+    },
+    {
+      "name": "jonathanpaserman/fed-press-release-text",
+      "source_platform": "kaggle",
+      "record_count": 0,
+      "download_count": 338,
+      "date_range": [
+        "unknown",
+        "2026-03-28"
+      ],
+      "columns": [],
+      "freshness_days": 69,
+      "has_engagement_metrics": false,
+      "has_sentiment_fields": false,
+      "is_complete": false
+    }
+  ],
+  "api_assessments": [],
+  "search_config": {
+    "kaggle_search_terms": [
+      "reddit finance data",
+      "stock twitter sentiment",
+      "stock reddit discussion",
+      "financial social media engagement",
+      "twitter finance data"
+    ],
+    "huggingface_search_terms": [
+      "stock sentiment",
+      "financial tweets",
+      "reddit finance data",
+      "twitter finance data"
+    ],
+    "filter_config": {
+      "require_complete": false,
+      "min_downloads": 50,
+      "max_freshness_days": -1,
+      "min_records": 0,
+      "top_k": 20
+    }
+  },
+  "execution_timestamp": "2026-06-06T07:07:33.853652+00:00",
+  "summary": {
+    "total": 20,
+    "complete": 0,
+    "incomplete": 20,
+    "filtered_out": 77
+  }
+}

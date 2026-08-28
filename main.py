@@ -23,6 +23,7 @@ import pandas as pd
 
 from src.models import (
     DatasetStore,
+    DiscoveryReportData,
     EnrichedDataset,
     PipelineConfig,
     PipelineError,
@@ -39,69 +40,217 @@ logger = logging.getLogger(__name__)
 
 
 def run_pipeline(config: PipelineConfig) -> PipelineResult:
-    """Execute all analysis stages in sequence.
+    """Execute pipeline phases based on configuration.
 
-    Orchestrates the full EDA pipeline: dataset discovery, API feasibility,
-    quality analysis, surge analysis, visualization, and report generation.
-    Each stage is wrapped in error handling so that failures in one stage
-    do not prevent subsequent stages from executing.
+    Dispatches to Phase 1 (discovery), Phase 2 (analysis), or both
+    depending on config.phase setting.
 
     Args:
-        config: PipelineConfig with all pipeline parameters.
+        config: PipelineConfig with all pipeline parameters including phase.
 
     Returns:
-        PipelineResult containing aggregated results from all stages,
-        including any errors encountered.
+        PipelineResult containing aggregated results from executed phases.
     """
-    result = PipelineResult()
     os.makedirs(config.output_dir, exist_ok=True)
+
+    if config.phase in ("discovery", "all"):
+        run_discovery_phase(config)
+
+    if config.phase in ("analysis", "all"):
+        result = run_analysis_phase(config)
+    else:
+        result = PipelineResult()
+
+    return result
+
+
+def run_discovery_phase(config: PipelineConfig) -> DiscoveryReportData:
+    """Execute Phase 1: Dataset Discovery.
+
+    Scans Kaggle/HuggingFace, runs API feasibility assessment,
+    filters results, and generates discovery reports (JSON + markdown).
+
+    Args:
+        config: PipelineConfig with search terms and filter settings.
+
+    Returns:
+        DiscoveryReportData containing all discovery results.
+    """
+    from datetime import datetime, timezone
+
+    from src.discovery_report_generator import (
+        generate_discovery_report_json,
+        generate_discovery_report_md,
+    )
+
+    print("=" * 60)
+    print("Phase 1: Dataset Discovery")
+    print("=" * 60)
 
     pipeline_start = time.perf_counter()
     stage_timings: dict[str, float] = {}
 
-    # ─── Stage 1/6: Dataset Discovery ───────────────────────────────────
-    print("Stage 1/6: Dataset Discovery...")
+    # ─── Discovery ──────────────────────────────────────────────────────
+    print("\n  Scanning datasets...")
     t0 = time.perf_counter()
-    result = _run_discovery_stage(config, result)
+
+    datasets_discovered = []
+    pre_filter_count = 0
+    try:
+        from src.dataset_discovery import (
+            filter_datasets,
+            flag_incomplete_datasets,
+            scan_huggingface,
+            scan_kaggle,
+        )
+
+        print("    Scanning Kaggle...")
+        kaggle_datasets = scan_kaggle(config.kaggle_search_terms)
+        print(f"    Found {len(kaggle_datasets)} Kaggle dataset(s)")
+
+        print("    Scanning HuggingFace...")
+        hf_datasets = scan_huggingface(config.huggingface_search_terms)
+        print(f"    Found {len(hf_datasets)} HuggingFace dataset(s)")
+
+        all_datasets = kaggle_datasets + hf_datasets
+        all_datasets = flag_incomplete_datasets(all_datasets)
+        pre_filter_count = len(all_datasets)
+
+        # Filter
+        all_datasets = filter_datasets(
+            all_datasets,
+            require_complete=config.filter_require_complete,
+            min_download_count=config.filter_min_downloads,
+            max_freshness_days=config.filter_max_freshness_days,
+            min_record_count=config.filter_min_records,
+            top_k=config.filter_top_k,
+        )
+        print(f"    Filtered: {pre_filter_count} → {len(all_datasets)} datasets")
+
+        complete_count = sum(1 for d in all_datasets if d.is_complete)
+        print(f"    Total: {len(all_datasets)} datasets ({complete_count} complete)")
+
+        datasets_discovered = all_datasets
+
+    except Exception as e:
+        logger.error("Dataset Discovery failed: %s", e)
+
     stage_timings["Dataset Discovery"] = time.perf_counter() - t0
 
-    # ─── Stage 2/6: API Feasibility Assessment ──────────────────────────
-    print("Stage 2/6: API Feasibility Assessment...")
-    t0 = time.perf_counter()
-    result = _run_api_feasibility_stage(config, result)
-    stage_timings["API Feasibility"] = time.perf_counter() - t0
+    # ─── API Feasibility ────────────────────────────────────────────────
+    api_assessments = []
+    if config.enable_api_feasibility:
+        print("\n  Assessing API feasibility...")
+        t0 = time.perf_counter()
+        try:
+            from src.api_feasibility import assess_reddit_api, assess_twitter_api
+
+            twitter_assessment = assess_twitter_api()
+            reddit_assessment = assess_reddit_api()
+            api_assessments = [twitter_assessment, reddit_assessment]
+            print(f"    Assessed {len(api_assessments)} API(s)")
+        except Exception as e:
+            logger.error("API Feasibility Assessment failed: %s", e)
+        stage_timings["API Feasibility"] = time.perf_counter() - t0
+    else:
+        print("\n  API Feasibility Assessment... SKIPPED (disabled)")
+
+    # ─── Build DiscoveryReportData ──────────────────────────────────────
+    complete_count = sum(1 for d in datasets_discovered if d.is_complete)
+    filtered_out = max(0, pre_filter_count - len(datasets_discovered))
+
+    discovery_data = DiscoveryReportData(
+        datasets=datasets_discovered,
+        api_assessments=api_assessments,
+        search_config={
+            "kaggle_search_terms": config.kaggle_search_terms,
+            "huggingface_search_terms": config.huggingface_search_terms,
+            "filter_config": {
+                "require_complete": config.filter_require_complete,
+                "min_downloads": config.filter_min_downloads,
+                "max_freshness_days": config.filter_max_freshness_days,
+                "min_records": config.filter_min_records,
+                "top_k": config.filter_top_k,
+            },
+        },
+        execution_timestamp=datetime.now(timezone.utc).isoformat(),
+        summary={
+            "total": len(datasets_discovered),
+            "complete": complete_count,
+            "incomplete": len(datasets_discovered) - complete_count,
+            "filtered_out": filtered_out,
+        },
+    )
+
+    # ─── Write Reports ──────────────────────────────────────────────────
+    print("\n  Generating discovery reports...")
+    json_path = os.path.join(config.output_dir, "discovery_report.json")
+    md_path = os.path.join(config.output_dir, "discovery_report.md")
+
+    generate_discovery_report_json(discovery_data, json_path)
+    print(f"    JSON: {json_path}")
+
+    generate_discovery_report_md(discovery_data, md_path)
+    print(f"    Markdown: {md_path}")
+
+    total_elapsed = time.perf_counter() - pipeline_start
+    print(f"\n  Phase 1 complete in {total_elapsed:.2f}s")
+    print("=" * 60)
+
+    return discovery_data
+
+
+def run_analysis_phase(config: PipelineConfig) -> PipelineResult:
+    """Execute Phase 2: EDA Analysis.
+
+    Loads local datasets, runs quality/surge/visualization/report stages.
+    Fully independent of Phase 1 — does not require discovery_report.json.
+    If discovery_report.md exists, the final report includes a reference link.
+
+    Args:
+        config: PipelineConfig with analysis parameters.
+
+    Returns:
+        PipelineResult containing quality, surge, and visualization results.
+    """
+    print("=" * 60)
+    print("Phase 2: EDA Analysis")
+    print("=" * 60)
+
+    result = PipelineResult()
+    pipeline_start = time.perf_counter()
+    stage_timings: dict[str, float] = {}
 
     # ─── Dataset Preparation: Load & Enrich Once ────────────────────────
-    print("Preparing datasets: Loading & enriching...")
+    print("\n  Preparing datasets: Loading & enriching...")
     t0 = time.perf_counter()
     store = _load_and_enrich_datasets(config)
     stage_timings["Dataset Preparation"] = time.perf_counter() - t0
-    print(f"  Loaded {len(store)} dataset(s)")
+    print(f"    Loaded {len(store)} dataset(s)")
     if store.load_errors:
         result.errors.extend(store.load_errors)
 
-    # ─── Stage 3/6: Dataset Quality Analysis ────────────────────────────
-    print("Stage 3/6: Dataset Quality Analysis...")
+    # ─── Dataset Quality Analysis ───────────────────────────────────────
+    print("\n  Running quality analysis...")
     t0 = time.perf_counter()
     result, dataset_timings = _run_quality_stage(config, result, store)
     stage_timings["Dataset Quality"] = time.perf_counter() - t0
 
-    # ─── Stage 4/6: Surge Analysis ──────────────────────────────────────
-    print("Stage 4/6: Surge Analysis...")
+    # ─── Surge Analysis ─────────────────────────────────────────────────
+    print("\n  Running surge analysis...")
     t0 = time.perf_counter()
     result = _run_surge_stage(config, result, store)
     stage_timings["Surge Analysis"] = time.perf_counter() - t0
 
-    # ─── Stage 5/6: Visualization ───────────────────────────────────────
-    print("Stage 5/6: Visualization...")
+    # ─── Visualization ──────────────────────────────────────────────────
+    print("\n  Generating visualizations...")
     t0 = time.perf_counter()
     result = _run_visualization_stage(config, result, store)
     stage_timings["Visualization"] = time.perf_counter() - t0
 
-    # ─── Stage 6/6: Report Generation ───────────────────────────────────
-    print("Stage 6/6: Report Generation...")
+    # ─── Report Generation ──────────────────────────────────────────────
+    print("\n  Generating EDA report...")
     t0 = time.perf_counter()
-    # Compute total elapsed up to this point (report gen timing will be added after)
     pre_report_elapsed = time.perf_counter() - pipeline_start
     timing_info = {
         "stage_timings": stage_timings,
@@ -115,64 +264,6 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
 
     # ─── Summary ────────────────────────────────────────────────────────
     _print_summary(result, stage_timings, total_elapsed)
-
-    return result
-
-
-def _run_discovery_stage(config: PipelineConfig, result: PipelineResult) -> PipelineResult:
-    """Execute the dataset discovery stage."""
-    try:
-        from src.dataset_discovery import (
-            flag_incomplete_datasets,
-            scan_huggingface,
-            scan_kaggle,
-        )
-
-        print("  Scanning Kaggle...")
-        kaggle_datasets = scan_kaggle(config.kaggle_search_terms)
-        print(f"  Found {len(kaggle_datasets)} Kaggle dataset(s)")
-
-        print("  Scanning HuggingFace...")
-        hf_datasets = scan_huggingface(config.huggingface_search_terms)
-        print(f"  Found {len(hf_datasets)} HuggingFace dataset(s)")
-
-        all_datasets = kaggle_datasets + hf_datasets
-        all_datasets = flag_incomplete_datasets(all_datasets)
-
-        complete_count = sum(1 for d in all_datasets if d.is_complete)
-        print(f"  Total: {len(all_datasets)} datasets ({complete_count} complete)")
-
-        result.datasets_discovered = all_datasets
-
-    except Exception as e:
-        error_msg = f"Dataset Discovery failed: {e}"
-        logger.error(error_msg)
-        result.errors.append(error_msg)
-
-    return result
-
-
-def _run_api_feasibility_stage(config: PipelineConfig, result: PipelineResult) -> PipelineResult:
-    """Execute the API feasibility assessment stage."""
-    try:
-        from src.api_feasibility import assess_reddit_api, assess_twitter_api
-
-        print("  Assessing X/Twitter API...")
-        twitter_assessment = assess_twitter_api()
-        print(f"  Twitter: supports_surge={twitter_assessment.supports_surge_label}, "
-              f"cost=${twitter_assessment.estimated_cost_usd:.2f}")
-
-        print("  Assessing Reddit API...")
-        reddit_assessment = assess_reddit_api()
-        print(f"  Reddit: supports_surge={reddit_assessment.supports_surge_label}, "
-              f"cost=${reddit_assessment.estimated_cost_usd:.2f}")
-
-        result.api_assessments = [twitter_assessment, reddit_assessment]
-
-    except Exception as e:
-        error_msg = f"API Feasibility Assessment failed: {e}"
-        logger.error(error_msg)
-        result.errors.append(error_msg)
 
     return result
 
@@ -490,7 +581,12 @@ def _run_report_stage(config: PipelineConfig, result: PipelineResult, timing_inf
 
         report_path = os.path.join(config.output_dir, "eda_report.md")
 
-        print(f"  Writing report to: {report_path}")
+        # Check if discovery report exists for cross-reference
+        discovery_report_path = os.path.join(config.output_dir, "discovery_report.md")
+        if not os.path.isfile(discovery_report_path):
+            discovery_report_path = None
+
+        print(f"    Writing report to: {report_path}")
         generated_path = generate_report(
             discovery_results=result.datasets_discovered,
             api_assessments=result.api_assessments,
@@ -499,9 +595,10 @@ def _run_report_stage(config: PipelineConfig, result: PipelineResult, timing_inf
             chart_paths=result.chart_paths,
             output_path=report_path,
             timing_info=timing_info,
+            discovery_report_path=discovery_report_path,
         )
         result.report_path = generated_path
-        print(f"  Report generated: {generated_path}")
+        print(f"    Report generated: {generated_path}")
 
     except Exception as e:
         error_msg = f"Report Generation failed: {e}"
@@ -850,11 +947,26 @@ def _evaluate_eda_objectives(
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="EDA Financial Discussions Pipeline"
+    )
+    parser.add_argument(
+        "--phase",
+        choices=["discovery", "analysis", "all"],
+        default="all",
+        help="Which phase to run: 'discovery' (Phase 1 only), "
+             "'analysis' (Phase 2 only), or 'all' (both phases sequentially). "
+             "Default: all",
+    )
+    args = parser.parse_args()
+
     print("EDA Financial Discussions Pipeline")
     print("-" * 40)
 
-    # Create default configuration
-    pipeline_config = PipelineConfig()
+    # Create configuration with phase from CLI
+    pipeline_config = PipelineConfig(phase=args.phase)
 
     # Run the pipeline
     pipeline_result = run_pipeline(pipeline_config)

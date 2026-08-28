@@ -134,12 +134,16 @@ _chart_path_strategy = st.lists(
 # Required sections that must appear in every report
 REQUIRED_SECTIONS = [
     "## Executive Summary",
-    "## Dataset Discovery Results",
-    "## API Feasibility Findings",
+    "## Dataset Discovery Summary",
     "## EDA Statistics",
     "## Surge Analysis Results",
     "## Final Recommendation",
 ]
+
+# Conditional sections that appear only when data is provided
+CONDITIONAL_SECTIONS = {
+    "## API Feasibility Findings": "api_assessments",
+}
 
 
 @pytest.mark.property_test
